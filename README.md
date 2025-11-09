@@ -13,6 +13,12 @@ A modern, feature-rich reminder application built with Tauri and Vue 3, featurin
 - **Custom Categories**: Create your own categories with unique colors
 - **Category Counters**: See how many reminders are in each category at a glance
 
+### 💾 Local Storage
+- **SQLite Database**: All reminders stored locally on your device
+- **Persistent**: Data survives app restarts
+- **Private**: No data sent to external servers
+- **Fast**: Instant access to your reminders
+
 ### 📋 List-Style Task Management
 - **Table View**: Organize your reminders in a clean, spreadsheet-like interface
 - **Quick Actions**: Check off tasks and delete with one click
@@ -106,7 +112,9 @@ tauri-vue-app/
 ## 🎯 Roadmap
 
 Future enhancements planned:
-- [ ] Persistent storage (save reminders to file/database)
+- [x] Persistent storage (SQLite database)
+- [x] System tray integration
+- [x] Debug logging system
 - [ ] Desktop notification system for due reminders
 - [ ] Automatic creation of recurring reminder instances
 - [ ] Sort and filter options (by date, priority, etc.)
@@ -115,6 +123,7 @@ Future enhancements planned:
 - [ ] Export/import reminders (JSON, CSV)
 - [ ] Reminder history and analytics
 - [ ] Subtasks and checklists
+- [ ] Optional server sync (future feature)
 
 ## 📄 License
 

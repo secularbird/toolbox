@@ -1,0 +1,16 @@
+# Sync Server Database
+*.db
+*.db-shm
+*.db-wal
+
+# Binaries
+sync-server
+sync-server.exe
+
+# Go
+vendor/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

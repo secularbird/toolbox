@@ -1,81 +1,66 @@
 use log::{info, debug, warn};
+use sqlx::SqlitePool;
 use crate::models::Reminder;
-use crate::state::AppState;
 
 #[tauri::command]
-pub fn add_reminder(
+pub async fn add_reminder(
     title: String,
     description: String,
     time: String,
     category: String,
     frequency: String,
-    state: tauri::State<AppState>,
+    pool: tauri::State<'_, SqlitePool>,
 ) -> Result<(), String> {
     info!("Adding reminder: title='{}', category='{}', time='{}', frequency='{}'", title, category, time, frequency);
     
-    let mut reminders = state.reminders.lock().unwrap();
-    let mut next_id = state.next_id.lock().unwrap();
-    
-    let reminder = Reminder {
-        id: *next_id,
-        title: title.clone(),
-        description: description.clone(),
-        time: time.clone(),
-        completed: false,
-        category: category.clone(),
-        frequency: frequency.clone(),
-    };
-    
-    reminders.push(reminder);
-    debug!("Reminder added with id={}, total reminders={}", *next_id, reminders.len());
-    *next_id += 1;
+    crate::database::add_reminder(&pool, &title, &description, &time, &category, &frequency)
+        .await
+        .map_err(|e| {
+            warn!("Failed to add reminder: {}", e);
+            e.to_string()
+        })?;
     
     Ok(())
 }
 
 #[tauri::command]
-pub fn get_reminders(state: tauri::State<AppState>) -> Result<Vec<Reminder>, String> {
+pub async fn get_reminders(pool: tauri::State<'_, SqlitePool>) -> Result<Vec<Reminder>, String> {
     debug!("Fetching all reminders");
-    let reminders = state.reminders.lock().unwrap();
-    info!("Retrieved {} reminders", reminders.len());
-    Ok(reminders.clone())
+    
+    crate::database::get_all_reminders(&pool)
+        .await
+        .map_err(|e| {
+            warn!("Failed to get reminders: {}", e);
+            e.to_string()
+        })
 }
 
 #[tauri::command]
-pub fn toggle_reminder(id: u32, state: tauri::State<AppState>) -> Result<(), String> {
+pub async fn toggle_reminder(id: u32, pool: tauri::State<'_, SqlitePool>) -> Result<(), String> {
     debug!("Toggling reminder with id={}", id);
-    let mut reminders = state.reminders.lock().unwrap();
     
-    if let Some(reminder) = reminders.iter_mut().find(|r| r.id == id) {
-        reminder.completed = !reminder.completed;
-        info!("Reminder id={} toggled to completed={}", id, reminder.completed);
-        Ok(())
-    } else {
-        warn!("Reminder id={} not found for toggle", id);
-        Err("Reminder not found".to_string())
-    }
+    crate::database::toggle_reminder(&pool, id)
+        .await
+        .map_err(|e| {
+            warn!("Failed to toggle reminder: {}", e);
+            e.to_string()
+        })
 }
 
 #[tauri::command]
-pub fn delete_reminder(id: u32, state: tauri::State<AppState>) -> Result<(), String> {
+pub async fn delete_reminder(id: u32, pool: tauri::State<'_, SqlitePool>) -> Result<(), String> {
     debug!("Deleting reminder with id={}", id);
-    let mut reminders = state.reminders.lock().unwrap();
     
-    if let Some(pos) = reminders.iter().position(|r| r.id == id) {
-        reminders.remove(pos);
-        info!("Reminder id={} deleted successfully, remaining reminders={}", id, reminders.len());
-        Ok(())
-    } else {
-        warn!("Reminder id={} not found for deletion", id);
-        Err("Reminder not found".to_string())
-    }
+    crate::database::delete_reminder(&pool, id)
+        .await
+        .map_err(|e| {
+            warn!("Failed to delete reminder: {}", e);
+            e.to_string()
+        })
 }
 
 #[tauri::command]
-pub fn set_debug_mode(enabled: bool, state: tauri::State<AppState>) -> Result<(), String> {
-    let mut config = state.config.lock().unwrap();
-    config.debug_mode = enabled;
-    
+pub fn set_debug_mode(enabled: bool) -> Result<(), String> {
     // Update log level dynamically
     let log_level = if enabled { "debug" } else { "info" };
     std::env::set_var("RUST_LOG", log_level);
@@ -85,7 +70,7 @@ pub fn set_debug_mode(enabled: bool, state: tauri::State<AppState>) -> Result<()
 }
 
 #[tauri::command]
-pub fn get_debug_mode(state: tauri::State<AppState>) -> Result<bool, String> {
-    let config = state.config.lock().unwrap();
-    Ok(config.debug_mode)
+pub fn get_debug_mode() -> Result<bool, String> {
+    let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| "debug".to_string());
+    Ok(log_level == "debug")
 }

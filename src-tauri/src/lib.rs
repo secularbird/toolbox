@@ -2,11 +2,10 @@ mod models;
 mod config;
 mod commands;
 mod tray;
-mod state;
+mod database;
 
 use log::info;
 use tauri::Manager;
-use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,7 +18,6 @@ pub fn run() {
     
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
             commands::add_reminder,
             commands::get_reminders,
@@ -30,6 +28,18 @@ pub fn run() {
         ])
         .setup(|app| {
             info!("Setting up application...");
+            
+            // Initialize database
+            let app_dir = app.path().app_data_dir().expect("Failed to get app data dir");
+            let db_path = app_dir.join("reminders.db");
+            info!("Database path: {:?}", db_path);
+            
+            let pool = tauri::async_runtime::block_on(async {
+                database::init_database(db_path).await.expect("Failed to initialize database")
+            });
+            
+            // Store pool in app state
+            app.manage(pool);
             
             // Setup system tray
             tray::setup_tray(app.app_handle())?;
