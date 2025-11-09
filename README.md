@@ -1,5 +1,8 @@
 # 📝 Reminder App
 
+[![Build Status](https://github.com/secularbird/toolbox/actions/workflows/build.yml/badge.svg)](https://github.com/secularbird/toolbox/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A modern, feature-rich reminder application built with Tauri and Vue 3, featuring a clean sidebar-based UI with list-style task management and recurring reminders.
 
 ## ✨ Features
