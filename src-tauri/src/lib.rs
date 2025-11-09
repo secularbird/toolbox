@@ -1,147 +1,47 @@
-use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
-use tauri::{Manager, menu::{Menu, MenuItem}, tray::{TrayIconBuilder, TrayIconEvent}};
+mod models;
+mod config;
+mod commands;
+mod tray;
+mod state;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct Reminder {
-    id: u32,
-    title: String,
-    description: String,
-    time: String,
-    completed: bool,
-    category: String,
-    frequency: String,
-}
-
-struct AppState {
-    reminders: Mutex<Vec<Reminder>>,
-    next_id: Mutex<u32>,
-}
-
-#[tauri::command]
-fn add_reminder(
-    title: String,
-    description: String,
-    time: String,
-    category: String,
-    frequency: String,
-    state: tauri::State<AppState>,
-) -> Result<(), String> {
-    let mut reminders = state.reminders.lock().unwrap();
-    let mut next_id = state.next_id.lock().unwrap();
-    
-    let reminder = Reminder {
-        id: *next_id,
-        title,
-        description,
-        time,
-        completed: false,
-        category,
-        frequency,
-    };
-    
-    reminders.push(reminder);
-    *next_id += 1;
-    
-    Ok(())
-}
-
-#[tauri::command]
-fn get_reminders(state: tauri::State<AppState>) -> Result<Vec<Reminder>, String> {
-    let reminders = state.reminders.lock().unwrap();
-    Ok(reminders.clone())
-}
-
-#[tauri::command]
-fn toggle_reminder(id: u32, state: tauri::State<AppState>) -> Result<(), String> {
-    let mut reminders = state.reminders.lock().unwrap();
-    
-    if let Some(reminder) = reminders.iter_mut().find(|r| r.id == id) {
-        reminder.completed = !reminder.completed;
-        Ok(())
-    } else {
-        Err("Reminder not found".to_string())
-    }
-}
-
-#[tauri::command]
-fn delete_reminder(id: u32, state: tauri::State<AppState>) -> Result<(), String> {
-    let mut reminders = state.reminders.lock().unwrap();
-    
-    if let Some(pos) = reminders.iter().position(|r| r.id == id) {
-        reminders.remove(pos);
-        Ok(())
-    } else {
-        Err("Reminder not found".to_string())
-    }
-}
+use log::info;
+use tauri::Manager;
+use state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize logger
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Debug)
+        .init();
+    
+    info!("Application starting...");
+    
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(AppState {
-            reminders: Mutex::new(Vec::new()),
-            next_id: Mutex::new(1),
-        })
+        .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![
-            add_reminder,
-            get_reminders,
-            toggle_reminder,
-            delete_reminder
+            commands::add_reminder,
+            commands::get_reminders,
+            commands::toggle_reminder,
+            commands::delete_reminder,
+            commands::set_debug_mode,
+            commands::get_debug_mode
         ])
         .setup(|app| {
-            // Create tray menu
-            let show = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show, &quit])?;
+            info!("Setting up application...");
+            
+            // Setup system tray
+            tray::setup_tray(app.app_handle())?;
+            
+            // Setup window handlers
+            tray::setup_window_handlers(app.app_handle())?;
 
-            // Create tray icon
-            let _tray = TrayIconBuilder::with_id("main")
-                .menu(&menu)
-                .on_menu_event(|app, event| match event.id.as_ref() {
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                    "quit" => {
-                        app.exit(0);
-                    }
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| {
-                    match event {
-                        TrayIconEvent::Click { button: tauri::tray::MouseButton::Left, .. } => {
-                            let app = tray.app_handle();
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                            }
-                        }
-                        TrayIconEvent::Click { button: tauri::tray::MouseButton::Right, .. } => {
-                            // Right-click - menu will show automatically
-                        }
-                        _ => {}
-                    }
-                })
-                .build(app)?;
-
-            // Handle window close event to hide instead of quit
-            if let Some(window) = app.get_webview_window("main") {
-                let window_clone = window.clone();
-                window.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        // Prevent the window from closing and hide it instead
-                        api.prevent_close();
-                        let _ = window_clone.hide();
-                    }
-                });
-            }
-
+            info!("Application setup completed successfully");
             Ok(())
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+    
+    info!("Application exited");
 }

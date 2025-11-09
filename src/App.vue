@@ -46,6 +46,7 @@ const reminders = ref<Reminder[]>([]);
 const message = ref("");
 const newCategoryName = ref("");
 const showAddCategory = ref(false);
+const debugMode = ref(true);
 
 const filteredReminders = computed(() => {
   if (selectedCategory.value === "all") {
@@ -142,8 +143,26 @@ function selectCategory(categoryId: string) {
   selectedCategory.value = categoryId;
 }
 
+async function toggleDebugMode() {
+  try {
+    await invoke("set_debug_mode", { enabled: debugMode.value });
+    console.log(`Debug mode ${debugMode.value ? 'enabled' : 'disabled'}`);
+  } catch (error) {
+    console.error("Failed to set debug mode:", error);
+  }
+}
+
+async function loadDebugMode() {
+  try {
+    debugMode.value = await invoke("get_debug_mode");
+  } catch (error) {
+    console.error("Failed to get debug mode:", error);
+  }
+}
+
 onMounted(() => {
   loadReminders();
+  loadDebugMode();
 });
 </script>
 
@@ -190,6 +209,18 @@ onMounted(() => {
             <button @click="showAddCategory = false; newCategoryName = ''" class="btn-cancel">✕</button>
           </div>
         </div>
+      </div>
+
+      <!-- Debug Mode Toggle -->
+      <div class="debug-section">
+        <label class="debug-toggle">
+          <input 
+            type="checkbox" 
+            v-model="debugMode" 
+            @change="toggleDebugMode"
+          />
+          <span class="debug-label">🐛 Debug Logs</span>
+        </label>
       </div>
     </aside>
 
@@ -443,6 +474,31 @@ onMounted(() => {
 .btn-cancel {
   background: #f44336;
   color: white;
+}
+
+.debug-section {
+  margin-top: auto;
+  padding: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.debug-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.debug-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.debug-label {
+  font-size: 0.9rem;
+  color: #666;
 }
 
 .main-content {

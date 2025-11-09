@@ -1,0 +1,12 @@
+# Cargo configuration for tauri-vue-app
+
+[build]
+# Keep build artifacts in the project directory
+target-dir = "src-tauri/target"
+
+[profile.release]
+# Optimize for smaller binary size
+opt-level = "z"     # Optimize for size
+lto = true          # Enable Link Time Optimization
+codegen-units = 1   # Maximize size reduction
+strip = true        # Strip symbols from binary
