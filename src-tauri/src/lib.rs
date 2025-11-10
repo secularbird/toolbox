@@ -1,5 +1,4 @@
 mod models;
-mod config;
 mod commands;
 mod tray;
 mod database;
@@ -22,14 +21,13 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::add_reminder,
             commands::get_reminders,
+            commands::get_due_reminders,
             commands::toggle_reminder,
             commands::delete_reminder,
             commands::set_debug_mode,
             commands::get_debug_mode,
             notifications::dismiss_notification,
-            notifications::snooze_reminder,
-            notifications::show_main_window,
-            notifications::quit_app
+            notifications::snooze_reminder
         ])
         .setup(|app| {
             info!("Setting up application...");

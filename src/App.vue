@@ -359,8 +359,9 @@ onMounted(() => {
 
 .sidebar-header h2 {
   margin: 0;
-  font-size: 1.3rem;
-  color: #333;
+  font-size: 1rem;
+  color: #1a1a1a;
+  font-weight: 600;
 }
 
 .categories {
@@ -369,11 +370,12 @@ onMounted(() => {
 }
 
 .categories h3 {
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  color: #888;
+  color: #666;
   margin: 0 0 0.5rem 0.5rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .category-item {
@@ -396,20 +398,22 @@ onMounted(() => {
 }
 
 .category-icon {
-  font-size: 1.2rem;
-  margin-right: 0.75rem;
+  font-size: 1rem;
+  margin-right: 0.6rem;
 }
 
 .category-name {
   flex: 1;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #2a2a2a;
 }
 
 .category-count {
   background: rgba(0, 0, 0, 0.1);
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.85rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -445,10 +449,10 @@ onMounted(() => {
 }
 
 .category-input {
-  padding: 0.75rem;
+  padding: 0.6rem;
   border: 1px solid #ddd;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
 }
 
 .category-form-actions {
@@ -459,11 +463,11 @@ onMounted(() => {
 .btn-save,
 .btn-cancel {
   flex: 1;
-  padding: 0.5rem;
+  padding: 0.45rem;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.85rem;
 }
 
 .btn-save {
@@ -521,13 +525,15 @@ onMounted(() => {
 
 .content-header h1 {
   margin: 0;
-  font-size: 1.8rem;
-  color: #333;
+  font-size: 1.3rem;
+  color: #1a1a1a;
+  font-weight: 700;
 }
 
 .reminder-count {
-  color: #888;
-  font-size: 0.9rem;
+  color: #666;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .content-body {
@@ -546,9 +552,9 @@ onMounted(() => {
 
 .reminder-form h2 {
   margin: 0 0 1rem 0;
-  color: #333;
-  font-size: 1.1rem;
-  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .compact-form {
@@ -565,10 +571,18 @@ onMounted(() => {
 .form-row .input-field {
   flex: 1;
   margin-bottom: 0;
-  padding: 0.7rem;
-  border: 1px solid #ddd;
+  padding: 0.6rem;
+  border: 2px solid #ddd;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.form-row .input-field:focus {
+  outline: none;
+  border-color: #396cd8;
+  box-shadow: 0 0 0 3px rgba(57, 108, 216, 0.1);
 }
 
 .category-select {
@@ -584,12 +598,12 @@ onMounted(() => {
 }
 
 .btn-add-compact {
-  padding: 0.7rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   background: #396cd8;
   color: white;
   border: none;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: background 0.3s;
   font-weight: 600;
@@ -624,24 +638,26 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: #999;
+  color: #666;
 }
 
 .empty-icon {
-  font-size: 3rem;
+  font-size: 2.5rem;
   display: block;
   margin-bottom: 1rem;
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .empty-state p {
   margin: 0.5rem 0;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
+  color: #444;
+  font-weight: 500;
 }
 
 .empty-state small {
-  color: #bbb;
-  font-size: 0.9rem;
+  color: #888;
+  font-size: 0.8rem;
 }
 
 .reminders-table {
@@ -652,13 +668,13 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 50px 1fr 180px 140px 200px 80px;
   gap: 1rem;
-  padding: 1rem 1.5rem;
+  padding: 0.8rem 1.2rem;
   background: #f8f9fa;
   border-bottom: 2px solid #e0e0e0;
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: 700;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  color: #666;
+  color: #444;
   letter-spacing: 0.5px;
 }
 
@@ -666,7 +682,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 50px 1fr 180px 140px 200px 80px;
   gap: 1rem;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.2rem;
   border-bottom: 1px solid #f0f0f0;
   align-items: center;
   transition: background 0.2s;
@@ -711,51 +727,52 @@ onMounted(() => {
 
 .checkbox-btn .check-icon {
   color: #4caf50;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: bold;
 }
 
 .col-title h3 {
   margin: 0 0 0.25rem 0;
-  font-size: 1rem;
-  color: #333;
-  font-weight: 500;
+  font-size: 0.9rem;
+  color: #1a1a1a;
+  font-weight: 600;
 }
 
 .col-title .description {
   margin: 0;
-  font-size: 0.85rem;
-  color: #888;
+  font-size: 0.75rem;
+  color: #555;
   line-height: 1.4;
 }
 
 .category-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 16px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: white;
 }
 
 .frequency-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.3rem 0.65rem;
-  background: #e8f4f8;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #396cd8;
-  border: 1px solid #d0e7f0;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: #d4e9f7;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #1565c0;
+  border: 1px solid #b3d9f2;
 }
 
 .time-display {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.8rem;
+  color: #444;
+  font-weight: 500;
 }
 
 .col-actions {
@@ -765,12 +782,12 @@ onMounted(() => {
 }
 
 .btn-delete-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   border-radius: 6px;
   transition: all 0.2s;
   display: flex;

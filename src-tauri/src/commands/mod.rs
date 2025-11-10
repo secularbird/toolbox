@@ -25,14 +25,50 @@ pub async fn add_reminder(
 
 #[tauri::command]
 pub async fn get_reminders(pool: tauri::State<'_, SqlitePool>) -> Result<Vec<Reminder>, String> {
-    debug!("Fetching all reminders");
+    debug!("get_reminders command called");
     
-    crate::database::get_all_reminders(&pool)
+    let reminders = crate::database::get_all_reminders(&pool)
         .await
         .map_err(|e| {
             warn!("Failed to get reminders: {}", e);
             e.to_string()
+        })?;
+    
+    info!("Returning {} reminders to frontend", reminders.len());
+    Ok(reminders)
+}
+
+#[tauri::command]
+pub async fn get_due_reminders(pool: tauri::State<'_, SqlitePool>) -> Result<Vec<Reminder>, String> {
+    debug!("Fetching due reminders");
+    
+    let rows = sqlx::query_as::<_, (i64, String, String, String, i64, String, String)>(
+        r#"
+        SELECT id, title, description, time, completed, category, frequency
+        FROM reminders
+        WHERE completed = 0 AND datetime(time) <= datetime('now')
+        ORDER BY time ASC
+        "#
+    )
+    .fetch_all(pool.inner())
+    .await
+    .map_err(|e| e.to_string())?;
+    
+    let reminders: Vec<Reminder> = rows
+        .into_iter()
+        .map(|(id, title, description, time, completed, category, frequency)| Reminder {
+            id: id as u32,
+            title,
+            description,
+            time,
+            completed: completed != 0,
+            category,
+            frequency,
         })
+        .collect();
+    
+    info!("Retrieved {} due reminders", reminders.len());
+    Ok(reminders)
 }
 
 #[tauri::command]

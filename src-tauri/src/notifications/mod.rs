@@ -3,7 +3,6 @@ use log::{info, debug, error};
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 use std::time::Duration;
 use tokio::time::sleep;
-use chrono::Utc;
 
 const CHECK_INTERVAL_SECONDS: u64 = 30;
 
@@ -17,9 +16,15 @@ pub async fn start_notification_service(pool: SqlitePool, app: AppHandle) {
             match check_due_reminders(&pool).await {
                 Ok(count) => {
                     if count > 0 {
-                        info!("Found {} due reminders", count);
+                        debug!("Found {} incomplete reminders, showing notification", count);
                         if let Err(e) = show_notification_list(&app).await {
                             error!("Failed to show notification list: {}", e);
+                        }
+                    } else {
+                        debug!("No incomplete reminders, closing notification if open");
+                        // Close notification window if no incomplete reminders
+                        if let Some(window) = app.get_webview_window("notification-list") {
+                            let _ = window.close();
                         }
                     }
                 }
@@ -32,18 +37,15 @@ pub async fn start_notification_service(pool: SqlitePool, app: AppHandle) {
 }
 
 async fn check_due_reminders(pool: &SqlitePool) -> Result<usize, sqlx::Error> {
-    debug!("Checking for due reminders");
-    
-    let now = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
+    debug!("Checking for incomplete reminders");
     
     let count: (i64,) = sqlx::query_as(
         r#"
         SELECT COUNT(*)
         FROM reminders
-        WHERE completed = 0 AND time <= ?
+        WHERE completed = 0
         "#
     )
-    .bind(&now)
     .fetch_one(pool)
     .await?;
     
@@ -53,12 +55,16 @@ async fn check_due_reminders(pool: &SqlitePool) -> Result<usize, sqlx::Error> {
 async fn show_notification_list(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let window_label = "notification-list";
     
-    // Check if window already exists
+    // Check if window already exists and is visible
     if let Some(window) = app.get_webview_window(window_label) {
-        // Just show and focus existing window
+        if window.is_visible().unwrap_or(false) {
+            debug!("Notification window already visible, doing nothing");
+            return Ok(());
+        }
+        // Window exists but hidden, show it
         let _ = window.show();
         let _ = window.set_focus();
-        debug!("Notification window already exists, showing it");
+        debug!("Showing existing notification window");
         return Ok(());
     }
     
@@ -146,34 +152,5 @@ pub async fn snooze_reminder(
     .await
     .map_err(|e| e.to_string())?;
     
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn show_main_window(app: AppHandle) -> Result<(), String> {
-    info!("Showing main window from notification");
-    
-    #[cfg(target_os = "macos")]
-    {
-        let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
-    }
-    
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.set_focus();
-    }
-    
-    // Close notification window
-    if let Some(notif) = app.get_webview_window("notification-list") {
-        let _ = notif.close();
-    }
-    
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn quit_app(app: AppHandle) -> Result<(), String> {
-    info!("Quitting application from notification");
-    app.exit(0);
     Ok(())
 }

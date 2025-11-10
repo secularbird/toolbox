@@ -147,49 +147,6 @@
       transform: scale(1.05);
     }
 
-    .actions {
-      display: flex;
-      gap: 6px;
-    }
-
-    .action-btn {
-      flex: 1;
-      padding: 6px 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 11px;
-      font-weight: 500;
-      transition: all 0.2s;
-    }
-
-    .dismiss-all-btn {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-    }
-
-    .dismiss-all-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    .view-all-btn {
-      background: white;
-      color: #667eea;
-    }
-
-    .view-all-btn:hover {
-      transform: scale(1.03);
-    }
-
-    .quit-btn {
-      background: rgba(255, 100, 100, 0.3);
-      color: white;
-    }
-
-    .quit-btn:hover {
-      background: rgba(255, 100, 100, 0.5);
-    }
-
     .empty {
       text-align: center;
       padding: 20px;
@@ -209,12 +166,6 @@
     <div class="list" id="list">
       <div class="empty">Loading...</div>
     </div>
-
-    <div class="actions">
-      <button class="action-btn dismiss-all-btn" onclick="dismissAll()">Dismiss All</button>
-      <button class="action-btn view-all-btn" onclick="viewAll()">View All</button>
-      <button class="action-btn quit-btn" onclick="quitApp()">Quit</button>
-    </div>
   </div>
 
   <script>
@@ -224,20 +175,28 @@
 
     async function loadReminders() {
       try {
-        const all = await invoke('get_reminders');
-        const now = new Date();
+        console.log('[NOTIFICATION] Starting to load reminders...');
         
-        // Get reminders that are due (time <= now and not completed)
-        reminders = all.filter(r => {
-          if (r.completed) return false;
-          const reminderTime = new Date(r.time);
-          return reminderTime <= now;
-        }).sort((a, b) => new Date(a.time) - new Date(b.time));
-
+        // Get all reminders
+        const allReminders = await invoke('get_reminders');
+        console.log('[NOTIFICATION] Received reminders from backend:', allReminders);
+        
+        if (!allReminders || !Array.isArray(allReminders)) {
+          console.error('[NOTIFICATION] Invalid response:', allReminders);
+          document.getElementById('list').innerHTML = '<div class="empty">Invalid data format</div>';
+          return;
+        }
+        
+        // Filter to show only incomplete reminders
+        reminders = allReminders
+          .filter(r => !r.completed)
+          .sort((a, b) => new Date(a.time) - new Date(b.time));
+        
+        console.log('[NOTIFICATION] Filtered incomplete reminders:', reminders);
         renderReminders();
       } catch (error) {
-        console.error('Failed to load reminders:', error);
-        document.getElementById('list').innerHTML = '<div class="empty">Failed to load</div>';
+        console.error('[NOTIFICATION] Failed to load reminders:', error);
+        document.getElementById('list').innerHTML = '<div class="empty">Failed to load: ' + error + '</div>';
       }
     }
 
@@ -245,24 +204,41 @@
       const list = document.getElementById('list');
       const count = document.getElementById('count');
 
+      console.log('[NOTIFICATION] Rendering reminders, count:', reminders.length);
+
       if (reminders.length === 0) {
-        // No reminders - close the notification window
-        invoke('dismiss_notification').catch(console.error);
+        // Show empty state but don't close - backend will close when appropriate
+        console.log('[NOTIFICATION] No incomplete reminders to show');
+        list.innerHTML = '<div class="empty">All tasks completed! ✓</div>';
+        count.textContent = '';
+        
+        // Backend will close this window on next check (30s)
         return;
       }
 
       count.textContent = `${reminders.length}`;
 
-      list.innerHTML = reminders.map(r => {
+      console.log('[NOTIFICATION] Building HTML for reminders...');
+      
+      console.log('[NOTIFICATION] Building HTML for reminders...');
+      
+      const html = reminders.map(r => {
         const time = new Date(r.time);
+        const now = new Date();
+        const isPast = time <= now;
         const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateStr = time.toLocaleDateString([], { month: 'short', day: 'numeric' });
         const desc = r.description ? ` - ${escapeHtml(r.description)}` : '';
         
+        // Add visual indicator for overdue items
+        const overdueClass = isPast ? ' style="background: rgba(255, 100, 100, 0.2);"' : '';
+        const overdueIcon = isPast ? '⚠️ ' : '';
+        
         return `
-          <div class="reminder-item">
+          <div class="reminder-item"${overdueClass}>
             <div class="reminder-info">
-              <div class="reminder-title">${escapeHtml(r.title)}${desc}</div>
-              <div class="reminder-time">${timeStr} • ${escapeHtml(r.category)}</div>
+              <div class="reminder-title">${overdueIcon}${escapeHtml(r.title)}${desc}</div>
+              <div class="reminder-time">${dateStr} ${timeStr} • ${escapeHtml(r.category)}</div>
             </div>
             <div class="reminder-actions">
               <button onclick="snooze(${r.id}, 5)">+5m</button>
@@ -271,6 +247,10 @@
           </div>
         `;
       }).join('');
+      
+      console.log('[NOTIFICATION] Setting HTML, length:', html.length);
+      list.innerHTML = html;
+      console.log('[NOTIFICATION] Render complete');
     }
 
     function escapeHtml(text) {
@@ -297,28 +277,6 @@
       } catch (error) {
         console.error('Failed to snooze:', error);
       }
-    }
-
-    async function dismissAll() {
-      try {
-        for (const r of reminders) {
-          await invoke('toggle_reminder', { id: r.id });
-        }
-        reminders = [];
-        renderReminders();
-      } catch (error) {
-        console.error('Failed to dismiss all:', error);
-      }
-    }
-
-    function viewAll() {
-      // Show main window
-      invoke('show_main_window').catch(console.error);
-    }
-
-    function quitApp() {
-      // Quit the application
-      invoke('quit_app').catch(console.error);
     }
 
     // Load reminders on start
