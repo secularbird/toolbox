@@ -3,6 +3,7 @@ mod config;
 mod commands;
 mod tray;
 mod database;
+mod notifications;
 
 use log::info;
 use tauri::Manager;
@@ -24,7 +25,11 @@ pub fn run() {
             commands::toggle_reminder,
             commands::delete_reminder,
             commands::set_debug_mode,
-            commands::get_debug_mode
+            commands::get_debug_mode,
+            notifications::dismiss_notification,
+            notifications::snooze_reminder,
+            notifications::show_main_window,
+            notifications::quit_app
         ])
         .setup(|app| {
             info!("Setting up application...");
@@ -39,7 +44,11 @@ pub fn run() {
             });
             
             // Store pool in app state
-            app.manage(pool);
+            app.manage(pool.clone());
+            
+            // Start notification service
+            let app_handle = app.app_handle().clone();
+            tauri::async_runtime::spawn(notifications::start_notification_service(pool, app_handle));
             
             // Setup system tray
             tray::setup_tray(app.app_handle())?;

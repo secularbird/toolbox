@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reminders</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .notification {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+      color: white;
+      animation: slideIn 0.3s ease-out;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      max-height: 400px;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(300px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .header-text {
+      font-size: 13px;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .list {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+    }
+
+    .list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 2px;
+    }
+
+    .reminder-item {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .reminder-item:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .reminder-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .reminder-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .reminder-title {
+      font-size: 12px;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      line-height: 1.3;
+      margin-bottom: 2px;
+    }
+
+    .reminder-time {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+
+    .reminder-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .reminder-actions button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      color: white;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .reminder-actions button:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .dismiss-all-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    .dismiss-all-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .view-all-btn {
+      background: white;
+      color: #667eea;
+    }
+
+    .view-all-btn:hover {
+      transform: scale(1.03);
+    }
+
+    .quit-btn {
+      background: rgba(255, 100, 100, 0.3);
+      color: white;
+    }
+
+    .quit-btn:hover {
+      background: rgba(255, 100, 100, 0.5);
+    }
+
+    .empty {
+      text-align: center;
+      padding: 20px;
+      opacity: 0.7;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="notification">
+    <div class="header">
+      <span class="icon">🔔</span>
+      <span class="header-text">Reminders</span>
+      <span id="count" style="font-size: 11px; opacity: 0.8;"></span>
+    </div>
+
+    <div class="list" id="list">
+      <div class="empty">Loading...</div>
+    </div>
+
+    <div class="actions">
+      <button class="action-btn dismiss-all-btn" onclick="dismissAll()">Dismiss All</button>
+      <button class="action-btn view-all-btn" onclick="viewAll()">View All</button>
+      <button class="action-btn quit-btn" onclick="quitApp()">Quit</button>
+    </div>
+  </div>
+
+  <script>
+    const { invoke } = window.__TAURI__.core;
+
+    let reminders = [];
+
+    async function loadReminders() {
+      try {
+        const all = await invoke('get_reminders');
+        const now = new Date();
+        
+        // Get reminders that are due (time <= now and not completed)
+        reminders = all.filter(r => {
+          if (r.completed) return false;
+          const reminderTime = new Date(r.time);
+          return reminderTime <= now;
+        }).sort((a, b) => new Date(a.time) - new Date(b.time));
+
+        renderReminders();
+      } catch (error) {
+        console.error('Failed to load reminders:', error);
+        document.getElementById('list').innerHTML = '<div class="empty">Failed to load</div>';
+      }
+    }
+
+    function renderReminders() {
+      const list = document.getElementById('list');
+      const count = document.getElementById('count');
+
+      if (reminders.length === 0) {
+        // No reminders - close the notification window
+        invoke('dismiss_notification').catch(console.error);
+        return;
+      }
+
+      count.textContent = `${reminders.length}`;
+
+      list.innerHTML = reminders.map(r => {
+        const time = new Date(r.time);
+        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const desc = r.description ? ` - ${escapeHtml(r.description)}` : '';
+        
+        return `
+          <div class="reminder-item">
+            <div class="reminder-info">
+              <div class="reminder-title">${escapeHtml(r.title)}${desc}</div>
+              <div class="reminder-time">${timeStr} • ${escapeHtml(r.category)}</div>
+            </div>
+            <div class="reminder-actions">
+              <button onclick="snooze(${r.id}, 5)">+5m</button>
+              <button onclick="dismiss(${r.id})">✓</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    async function dismiss(reminderId) {
+      try {
+        await invoke('toggle_reminder', { id: reminderId });
+        reminders = reminders.filter(r => r.id !== reminderId);
+        renderReminders();
+      } catch (error) {
+        console.error('Failed to dismiss:', error);
+      }
+    }
+
+    async function snooze(reminderId, minutes) {
+      try {
+        await invoke('snooze_reminder', { reminderId, minutes });
+        reminders = reminders.filter(r => r.id !== reminderId);
+        renderReminders();
+      } catch (error) {
+        console.error('Failed to snooze:', error);
+      }
+    }
+
+    async function dismissAll() {
+      try {
+        for (const r of reminders) {
+          await invoke('toggle_reminder', { id: r.id });
+        }
+        reminders = [];
+        renderReminders();
+      } catch (error) {
+        console.error('Failed to dismiss all:', error);
+      }
+    }
+
+    function viewAll() {
+      // Show main window
+      invoke('show_main_window').catch(console.error);
+    }
+
+    function quitApp() {
+      // Quit the application
+      invoke('quit_app').catch(console.error);
+    }
+
+    // Load reminders on start
+    loadReminders();
+
+    // Refresh every 30 seconds
+    setInterval(loadReminders, 30000);
+  </script>
+</body>
+</html>
