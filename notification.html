@@ -202,11 +202,15 @@
         console.log('[NOTIFICATION] Received reminders-updated event:', event.payload);
         if (Array.isArray(event.payload)) {
           // Update reminders from event
-          reminders = event.payload
+          const allReminders = event.payload;
+          reminders = allReminders
             .filter(r => !r.completed)
             .sort((a, b) => new Date(a.time) - new Date(b.time));
           
-          console.log('[NOTIFICATION] Updated reminders count:', reminders.length);
+          console.log('[NOTIFICATION] Total reminders:', allReminders.length);
+          console.log('[NOTIFICATION] Incomplete reminders:', reminders.length);
+          
+          // Render will auto-close window if no incomplete reminders
           renderReminders();
         } else {
           console.error('[NOTIFICATION] Invalid reminders data format:', event.payload);
@@ -249,7 +253,8 @@
       console.log('[NOTIFICATION] Rendering reminders, count:', reminders.length);
 
       if (reminders.length === 0) {
-        console.log('[NOTIFICATION] No incomplete reminders to show - closing window');
+        console.log('[NOTIFICATION] ✓ No incomplete reminders found');
+        console.log('[NOTIFICATION] Displaying completion message and closing window in 1.5s...');
         list.innerHTML = '<div class="empty">All tasks completed! ✓</div>';
         count.textContent = '';
         
@@ -258,6 +263,7 @@
           try {
             const { getCurrentWindow } = window.__TAURI__.window;
             const currentWindow = getCurrentWindow();
+            console.log('[NOTIFICATION] Closing notification window...');
             await currentWindow.close();
             console.log('[NOTIFICATION] Window closed successfully');
           } catch (error) {
