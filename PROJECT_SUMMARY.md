@@ -19,7 +19,7 @@ A modern, privacy-focused reminder application built with Tauri 2 and Vue 3, fea
 
 ## Architecture
 
-```
+```text
 tauri-vue-app/
 ├── src/                      # Vue frontend
 │   ├── App.vue              # Main component
@@ -30,10 +30,10 @@ tauri-vue-app/
 │       ├── config/          # App configuration
 │       ├── database/        # SQLite operations
 │       ├── models/          # Data models
+│       ├── notifications/   # Notification service
 │       ├── tray/            # System tray functionality
 │       └── lib.rs           # Main entry point
-└── sync-server/             # Optional Go sync server
-    └── main.go
+└── notification.html        # Notification window
 ```
 
 ## Features
@@ -125,18 +125,6 @@ Outputs:
 | Linux | `~/.local/share/tauri-vue-app/reminders.db` |
 | Windows | `%APPDATA%\com.yaozhuang.tauri-vue-app\reminders.db` |
 
-## Optional: Sync Server
-
-A Go-based sync server is included in `sync-server/` for future cloud sync functionality.
-
-**Status**: Not integrated yet (local-only storage currently)
-
-To run the server:
-```bash
-cd sync-server
-go run main.go
-```
-
 ## Documentation
 
 - `README.md` - Main project documentation
@@ -144,7 +132,6 @@ go run main.go
 - `DEBUG_LOGGING.md` - Debug logging guide
 - `BUILD_OUTPUT.md` - Build configuration
 - `ARCHITECTURE.md` - Code structure (in src-tauri/src/)
-- `sync-server/README.md` - Sync server docs (future feature)
 
 ## Key Design Decisions
 
@@ -156,13 +143,12 @@ go run main.go
 
 ## Future Enhancements
 
-- [ ] Desktop notifications
-- [ ] Server sync (optional)
-- [ ] Cloud backup
-- [ ] Multi-device sync
+- [ ] Enhanced desktop notifications
 - [ ] Search functionality
 - [ ] Priority levels
+- [ ] Tags and labels
 - [ ] Export/import
+- [ ] Custom themes
 
 ## License
 

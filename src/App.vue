@@ -234,17 +234,41 @@ onMounted(() => {
         <p class="reminder-count">{{ filteredReminders.length }} reminder{{ filteredReminders.length !== 1 ? 's' : '' }}</p>
       </div>
 
+      <p v-if="message" class="message">{{ message }}</p>
+
       <div class="content-body">
-        <div class="reminder-form">
-          <h2>Add New Reminder</h2>
-          <form @submit.prevent="addReminder" class="compact-form">
-            <div class="form-row">
+        <div v-if="filteredReminders.length === 0" class="no-reminders">
+          <div class="empty-state">
+            <span class="empty-icon">📝</span>
+            <p>No reminders in this category yet</p>
+            <small>Click below to add your first reminder</small>
+          </div>
+        </div>
+        
+        <div class="reminders-table">
+          <div class="table-header">
+            <div class="col-checkbox"></div>
+            <div class="col-title">Task</div>
+            <div class="col-category">Category</div>
+            <div class="col-frequency">Frequency</div>
+            <div class="col-time">Due Date</div>
+            <div class="col-actions">Actions</div>
+          </div>
+          
+          <!-- Add New Reminder Row -->
+          <form @submit.prevent="addReminder" class="table-row add-row">
+            <div class="col-checkbox">
+              <span class="add-icon">+</span>
+            </div>
+            <div class="col-title">
               <input
                 v-model="reminderTitle"
-                placeholder="What do you need to do?"
-                class="input-field"
+                placeholder="Add a new task..."
+                class="inline-input"
               />
-              <select v-model="reminderCategory" class="input-field category-select">
+            </div>
+            <div class="col-category">
+              <select v-model="reminderCategory" class="inline-select">
                 <option 
                   v-for="cat in categories.filter(c => c.id !== 'all')" 
                   :key="cat.id" 
@@ -254,13 +278,8 @@ onMounted(() => {
                 </option>
               </select>
             </div>
-            <div class="form-row">
-              <input
-                v-model="reminderTime"
-                type="datetime-local"
-                class="input-field time-input"
-              />
-              <select v-model="reminderFrequency" class="input-field frequency-select">
+            <div class="col-frequency">
+              <select v-model="reminderFrequency" class="inline-select">
                 <option 
                   v-for="freq in frequencyOptions" 
                   :key="freq.value" 
@@ -269,65 +288,53 @@ onMounted(() => {
                   {{ freq.icon }} {{ freq.label }}
                 </option>
               </select>
-              <button type="submit" class="btn-add-compact">+ Add</button>
+            </div>
+            <div class="col-time">
+              <input
+                v-model="reminderTime"
+                type="datetime-local"
+                class="inline-input"
+              />
+            </div>
+            <div class="col-actions">
+              <button type="submit" class="btn-add-inline">✓</button>
             </div>
           </form>
-          <p v-if="message" class="message">{{ message }}</p>
-        </div>
-
-        <div class="reminders-section">
-          <div v-if="filteredReminders.length === 0" class="no-reminders">
-            <div class="empty-state">
-              <span class="empty-icon">📝</span>
-              <p>No reminders in this category yet</p>
-              <small>Add one above to get started</small>
-            </div>
-          </div>
           
-          <div v-else class="reminders-table">
-            <div class="table-header">
-              <div class="col-checkbox"></div>
-              <div class="col-title">Task</div>
-              <div class="col-category">Category</div>
-              <div class="col-frequency">Frequency</div>
-              <div class="col-time">Due Date</div>
-              <div class="col-actions">Actions</div>
+          <!-- Existing Reminders -->
+          <div
+            v-for="reminder in filteredReminders"
+            :key="reminder.id"
+            class="table-row"
+            :class="{ completed: reminder.completed }"
+          >
+            <div class="col-checkbox">
+              <button @click="toggleReminder(reminder.id)" class="checkbox-btn">
+                <span v-if="reminder.completed" class="check-icon">✓</span>
+              </button>
             </div>
-            
-            <div
-              v-for="reminder in filteredReminders"
-              :key="reminder.id"
-              class="table-row"
-              :class="{ completed: reminder.completed }"
-            >
-              <div class="col-checkbox">
-                <button @click="toggleReminder(reminder.id)" class="checkbox-btn">
-                  <span v-if="reminder.completed" class="check-icon">✓</span>
-                </button>
-              </div>
-              <div class="col-title">
-                <h3>{{ reminder.title }}</h3>
-                <p v-if="reminder.description" class="description">{{ reminder.description }}</p>
-              </div>
-              <div class="col-category">
-                <span class="category-badge" :style="{ backgroundColor: categories.find(c => c.id === reminder.category)?.color }">
-                  {{ categories.find(c => c.id === reminder.category)?.icon }}
-                  {{ categories.find(c => c.id === reminder.category)?.name }}
-                </span>
-              </div>
-              <div class="col-frequency">
-                <span class="frequency-badge">
-                  {{ getFrequencyLabel(reminder.frequency) }}
-                </span>
-              </div>
-              <div class="col-time">
-                <span class="time-display">{{ new Date(reminder.time).toLocaleString() }}</span>
-              </div>
-              <div class="col-actions">
-                <button @click="deleteReminder(reminder.id)" class="btn-delete-icon" title="Delete">
-                  🗑️
-                </button>
-              </div>
+            <div class="col-title">
+              <h3>{{ reminder.title }}</h3>
+              <p v-if="reminder.description" class="description">{{ reminder.description }}</p>
+            </div>
+            <div class="col-category">
+              <span class="category-badge" :style="{ backgroundColor: categories.find(c => c.id === reminder.category)?.color }">
+                {{ categories.find(c => c.id === reminder.category)?.icon }}
+                {{ categories.find(c => c.id === reminder.category)?.name }}
+              </span>
+            </div>
+            <div class="col-frequency">
+              <span class="frequency-badge">
+                {{ getFrequencyLabel(reminder.frequency) }}
+              </span>
+            </div>
+            <div class="col-time">
+              <span class="time-display">{{ new Date(reminder.time).toLocaleString() }}</span>
+            </div>
+            <div class="col-actions">
+              <button @click="deleteReminder(reminder.id)" class="btn-delete-icon" title="Delete">
+                🗑️
+              </button>
             </div>
           </div>
         </div>
@@ -542,76 +549,84 @@ onMounted(() => {
   padding: 1.5rem 2rem;
 }
 
-.reminder-form {
-  background: #fff;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
-}
-
-.reminder-form h2 {
-  margin: 0 0 1rem 0;
-  color: #1a1a1a;
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
-.compact-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.form-row {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.form-row .input-field {
-  flex: 1;
-  margin-bottom: 0;
-  padding: 0.6rem;
-  border: 2px solid #ddd;
+.add-row {
+  background: #f8fbff;
+  border: 2px dashed #396cd8;
   border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.add-row:hover {
+  background: #f0f7ff;
+  border-color: #2d5ab8;
+}
+
+.add-icon {
+  font-size: 1.2rem;
+  color: #396cd8;
+  font-weight: bold;
+}
+
+.inline-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
   font-size: 0.85rem;
   color: #1a1a1a;
   font-weight: 500;
+  background: white;
 }
 
-.form-row .input-field:focus {
+.inline-input:focus {
   outline: none;
   border-color: #396cd8;
-  box-shadow: 0 0 0 3px rgba(57, 108, 216, 0.1);
+  box-shadow: 0 0 0 2px rgba(57, 108, 216, 0.1);
 }
 
-.category-select {
-  max-width: 200px;
+.inline-input::placeholder {
+  color: #999;
+  font-weight: 400;
 }
 
-.frequency-select {
-  max-width: 160px;
+.inline-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #1a1a1a;
+  font-weight: 500;
+  background: white;
+  cursor: pointer;
 }
 
-.time-input {
-  flex: 2;
+.inline-select:focus {
+  outline: none;
+  border-color: #396cd8;
 }
 
-.btn-add-compact {
-  padding: 0.6rem 1.2rem;
-  background: #396cd8;
+.btn-add-inline {
+  width: 100%;
+  padding: 0.5rem;
+  background: #4caf50;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 0.85rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
   cursor: pointer;
-  transition: background 0.3s;
-  font-weight: 600;
-  white-space: nowrap;
+  transition: background 0.2s;
 }
 
-.btn-add-compact:hover {
-  background: #2d5ab8;
+.btn-add-inline:hover {
+  background: #45a049;
+}
+
+.message {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #4caf50;
 }
 
 .message {

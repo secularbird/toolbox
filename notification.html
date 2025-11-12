@@ -170,16 +170,61 @@
 
   <script>
     const { invoke } = window.__TAURI__.core;
+    const { listen } = window.__TAURI__.event;
 
     let reminders = [];
 
+    // Listen for WebSocket updates
+    async function setupWebSocketListeners() {
+      console.log('[NOTIFICATION] Setting up WebSocket listeners');
+      
+      await listen('reminders-updated', (event) => {
+        console.log('[NOTIFICATION] Received WebSocket update event:', event.payload);
+        if (Array.isArray(event.payload)) {
+          // Replace with WebSocket data if it has items
+          const wsReminders = event.payload
+            .filter(r => !r.completed)
+            .sort((a, b) => new Date(a.time) - new Date(b.time));
+          console.log('[NOTIFICATION] WebSocket reminders count:', wsReminders.length);
+          
+          if (wsReminders.length > 0) {
+            // Merge by ID to avoid duplicates
+            const reminderMap = new Map();
+            
+            // Add local reminders first
+            reminders.forEach(r => reminderMap.set(r.id, r));
+            
+            // Merge/override with WebSocket data
+            wsReminders.forEach(r => reminderMap.set(r.id, r));
+            
+            // Convert back to array
+            reminders = Array.from(reminderMap.values())
+              .sort((a, b) => new Date(a.time) - new Date(b.time));
+              
+            console.log('[NOTIFICATION] Merged reminders count:', reminders.length);
+            renderReminders();
+          }
+        } else {
+          console.error('[NOTIFICATION] Invalid reminders data format:', event.payload);
+        }
+      });
+
+      await listen('reminder-update-status', (event) => {
+        console.log('[NOTIFICATION] Reminder update status:', event.payload);
+        // Refresh reminders after update
+        loadReminders();
+      });
+      
+      console.log('[NOTIFICATION] WebSocket listeners set up successfully');
+    }
+
     async function loadReminders() {
       try {
-        console.log('[NOTIFICATION] Starting to load reminders...');
+        console.log('[NOTIFICATION] Loading reminders from local database');
         
-        // Get all reminders
+        // Load from local DB (always works, even offline)
         const allReminders = await invoke('get_reminders');
-        console.log('[NOTIFICATION] Received reminders from backend:', allReminders);
+        console.log('[NOTIFICATION] Received', allReminders?.length || 0, 'reminders from backend');
         
         if (!allReminders || !Array.isArray(allReminders)) {
           console.error('[NOTIFICATION] Invalid response:', allReminders);
@@ -192,11 +237,31 @@
           .filter(r => !r.completed)
           .sort((a, b) => new Date(a.time) - new Date(b.time));
         
-        console.log('[NOTIFICATION] Filtered incomplete reminders:', reminders);
+        console.log('[NOTIFICATION] Filtered to', reminders.length, 'incomplete reminders');
         renderReminders();
+        
+        // Try to fetch from WebSocket in background (non-blocking)
+        tryWebSocketSync();
       } catch (error) {
         console.error('[NOTIFICATION] Failed to load reminders:', error);
-        document.getElementById('list').innerHTML = '<div class="empty">Failed to load: ' + error + '</div>';
+        document.getElementById('list').innerHTML = '<div class="empty">Failed to load reminders</div>';
+      }
+    }
+    
+    async function tryWebSocketSync() {
+      try {
+        const connected = await invoke('ws_is_connected');
+        console.log('[NOTIFICATION] WebSocket connected:', connected);
+        
+        if (connected) {
+          console.log('[NOTIFICATION] Fetching from WebSocket server');
+          await invoke('ws_fetch_reminders');
+          console.log('[NOTIFICATION] WebSocket fetch request sent (data will arrive via event)');
+        } else {
+          console.log('[NOTIFICATION] WebSocket not connected, using local data only');
+        }
+      } catch (error) {
+        console.error('[NOTIFICATION] WebSocket sync error (non-fatal):', error);
       }
     }
 
@@ -261,11 +326,34 @@
 
     async function dismiss(reminderId) {
       try {
-        await invoke('toggle_reminder', { id: reminderId });
+        console.log('[NOTIFICATION] Dismissing reminder:', reminderId);
+        
+        // Optimistically update UI first
         reminders = reminders.filter(r => r.id !== reminderId);
         renderReminders();
+        
+        // Update local DB (always works)
+        await invoke('toggle_reminder', { id: reminderId });
+        console.log('[NOTIFICATION] Reminder dismissed in local DB');
+        
+        // Try to sync with WebSocket in background (non-blocking, best-effort)
+        tryWebSocketUpdate(reminderId, true);
       } catch (error) {
-        console.error('Failed to dismiss:', error);
+        console.error('[NOTIFICATION] Failed to dismiss:', error);
+        // Reload on error
+        await loadReminders();
+      }
+    }
+    
+    async function tryWebSocketUpdate(reminderId, completed) {
+      try {
+        const connected = await invoke('ws_is_connected');
+        if (connected) {
+          await invoke('ws_update_reminder', { id: reminderId, completed: completed });
+          console.log('[NOTIFICATION] Reminder update synced to WebSocket server');
+        }
+      } catch (error) {
+        console.error('[NOTIFICATION] WebSocket sync error (non-fatal):', error);
       }
     }
 
@@ -279,8 +367,10 @@
       }
     }
 
-    // Load reminders on start
-    loadReminders();
+    // Setup WebSocket listeners and load reminders on start
+    setupWebSocketListeners().then(() => {
+      loadReminders();
+    });
 
     // Refresh every 30 seconds
     setInterval(loadReminders, 30000);

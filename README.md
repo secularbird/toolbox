@@ -1,134 +1,198 @@
-# 📝 Reminder App
+# Tauri Vue Reminder App
 
-[![Build Status](https://github.com/secularbird/toolbox/actions/workflows/build.yml/badge.svg)](https://github.com/secularbird/toolbox/actions/workflows/build.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+A desktop reminder application built with Tauri, Vue.js, and Rust with local SQLite storage.
 
-A modern, feature-rich reminder application built with Tauri and Vue 3, featuring a clean sidebar-based UI with list-style task management and recurring reminders.
+## Features
 
-## ✨ Features
+- ✅ **System Tray Integration** - Lives in system tray, right-click for menu
+- ✅ **Local SQLite Database** - All data stored locally
+- ✅ **Smart Notifications** - Popup reminders for incomplete tasks
+- ✅ **Privacy-Focused** - All data stays on your device
+- ✅ **Auto-Hide Dock** - Minimal dock presence when main window closed
+- ✅ **Debug Logging** - Comprehensive logging for troubleshooting
 
-### 🗂️ Category Management
-- **Sidebar Navigation**: Easy access to all your reminder categories
-- **Built-in Categories**: Work, Personal, Shopping, Health, and Other
-- **Custom Categories**: Create your own categories with unique colors
-- **Category Counters**: See how many reminders are in each category at a glance
+## Quick Start
 
-### 💾 Local Storage
-- **SQLite Database**: All reminders stored locally on your device
-- **Persistent**: Data survives app restarts
-- **Private**: No data sent to external servers
-- **Fast**: Instant access to your reminders
-
-### 📋 List-Style Task Management
-- **Table View**: Organize your reminders in a clean, spreadsheet-like interface
-- **Quick Actions**: Check off tasks and delete with one click
-- **Inline Details**: See task title, description, category, frequency, and due date all in one row
-- **Smart Filtering**: View reminders by category or see all at once
-
-### ⏰ Recurring Reminders
-- **🔵 Once**: One-time reminder
-- **📅 Daily**: Repeats every day
-- **📆 Weekly**: Repeats every week
-- **🗓️ Monthly**: Repeats every month
-- **📊 Yearly**: Repeats every year
-
-### ⚡ Quick Add Form
-- **Compact Input**: Add reminders quickly without leaving your view
-- **Category Selection**: Choose the category while creating a reminder
-- **Frequency Selector**: Pick how often the reminder should repeat
-- **Date/Time Picker**: Set due dates and times easily
-- **Instant Updates**: Reminders appear immediately after adding
-
-### 🎨 Modern Design
-- **Clean Interface**: Minimalist design focused on productivity
-- **Dark Mode**: Automatic dark mode support based on system preferences
-- **Color-Coded**: Each category has its own color for easy identification
-- **Smooth Animations**: Polished hover effects and transitions
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js (v16 or higher)
-- Rust (latest stable version)
-- npm or yarn
-
-### Installation
+### Development
 
 ```bash
-# Clone or navigate to the project
-cd tauri-vue-app
-
 # Install dependencies
 npm install
 
 # Run in development mode
 npm run tauri dev
+```
 
-# Build for production
+### Production Build
+
+```bash
+# Build the application
 npm run tauri build
 ```
 
-## 📖 How to Use
+The built application will be in `src-tauri/target/release/`.
 
-1. **Add a Reminder**: 
-   - Fill in the task title
-   - Select a category from the dropdown
-   - Choose a due date and time
-   - Select the frequency (Once, Daily, Weekly, etc.)
-   - Click "+ Add"
+## Architecture
 
-2. **Manage Reminders**:
-   - Click the checkbox to mark a task as complete
-   - Click the trash icon to delete a reminder
-   - Completed tasks appear with strikethrough text
-
-3. **Organize by Category**:
-   - Click any category in the sidebar to filter reminders
-   - Click "All Reminders" to see everything
-   - Use "+ Add Category" to create custom categories
-
-## 🛠️ Technology Stack
-
-- **Frontend**: Vue 3 with TypeScript
-- **Backend**: Rust (Tauri)
-- **Build Tool**: Vite
-- **Styling**: Scoped CSS with CSS Grid for list layout
-
-## 📝 Project Structure
-
+```text
+┌─────────────────────────────────────────┐
+│          Tauri Application              │
+│  ┌────────────┐      ┌──────────────┐  │
+│  │ Vue.js UI  │◄────►│ Rust Backend │  │
+│  └────────────┘      └───────┬──────┘  │
+│                              │          │
+│                       ┌──────▼──────┐   │
+│                       │   SQLite    │   │
+│                       └─────────────┘   │
+└─────────────────────────────────────────┘
 ```
+
+## Components
+
+### Frontend (Vue.js)
+
+- Main window showing all reminders
+- Add/edit/delete reminders
+- Filter by category and completion status
+
+### Backend (Rust)
+
+- Tauri commands for database operations
+- Notification service (checks every 30s)
+- System tray management
+
+### Notification Window
+
+- Standalone HTML window
+- Shows incomplete reminders
+- Snooze and complete actions
+- Auto-refreshes every 30 seconds
+- Positioned in top-right corner
+
+## Data Flow
+
+1. **Local-First**: All operations write to local SQLite database immediately
+2. **Privacy-Focused**: All data stays on your device
+3. **Event-Driven**: UI updates via Tauri events
+
+## Database Schema
+
+```sql
+CREATE TABLE reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    time TEXT NOT NULL,
+    completed INTEGER NOT NULL DEFAULT 0,
+    category TEXT NOT NULL,
+    frequency TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+)
+```
+
+## Configuration
+
+### Debug Logging
+
+Set log level via environment variable:
+```bash
+RUST_LOG=debug npm run tauri dev
+```
+
+Or programmatically via Tauri command:
+```javascript
+await invoke('set_debug_mode', { enabled: true });
+```
+
+### Database Location
+
+- **macOS**: `~/Library/Application Support/com.yaozhuang.tauri-vue-app/reminders.db`
+- **Linux**: `~/.local/share/com.yaozhuang.tauri-vue-app/reminders.db`
+- **Windows**: `%APPDATA%\com.yaozhuang.tauri-vue-app\reminders.db`
+
+## Project Structure
+
+### Project Structure
+
+```text
 tauri-vue-app/
-├── src/                    # Vue frontend
-│   ├── App.vue            # Main application component
-│   ├── main.ts            # Application entry point
-│   └── assets/            # Static assets
+├── src/                    # Vue.js frontend
+│   ├── components/
+│   └── App.vue
 ├── src-tauri/             # Rust backend
 │   ├── src/
-│   │   └── lib.rs         # Tauri commands and state management
-│   └── Cargo.toml         # Rust dependencies
-└── package.json           # Node dependencies
+│   │   ├── commands/      # Tauri commands
+│   │   ├── database/      # SQLite operations
+│   │   ├── notifications/ # Notification service
+│   │   ├── tray/          # System tray
+│   │   └── models/        # Data models
+│   └── tauri.conf.json
+├── notification.html      # Notification window
+└── README.md
 ```
 
-## 🎯 Roadmap
+## Troubleshooting
 
-Future enhancements planned:
-- [x] Persistent storage (SQLite database)
-- [x] System tray integration
-- [x] Debug logging system
-- [ ] Desktop notification system for due reminders
-- [ ] Automatic creation of recurring reminder instances
-- [ ] Sort and filter options (by date, priority, etc.)
-- [ ] Search functionality across all reminders
-- [ ] Priority levels (High, Medium, Low)
-- [ ] Export/import reminders (JSON, CSV)
-- [ ] Reminder history and analytics
-- [ ] Subtasks and checklists
-- [ ] Optional server sync (future feature)
+### Database Errors
 
-## 📄 License
+Reset database:
+```bash
+rm ~/Library/Application\ Support/com.yaozhuang.tauri-vue-app/reminders.db
+```
 
-This project is open source and available under the MIT License.
+### Build Errors
 
----
+Clean and rebuild:
+```bash
+cd src-tauri
+cargo clean
+cargo build
+```
 
-Built with ❤️ using Tauri and Vue
+## Logs
+
+View logs in terminal during development:
+```bash
+npm run tauri dev 2>&1 | tee app.log
+```
+
+Look for:
+- `[INFO]` - General information
+- `[DEBUG]` - Detailed debugging info  
+- `[WARN]` - Warnings (non-fatal)
+- `[ERROR]` - Errors (may be fatal)
+
+## System Requirements
+
+- **macOS**: 10.15+
+- **Linux**: Modern distribution with GTK3
+- **Windows**: Windows 7+
+
+## Technologies
+
+- **Frontend**: Vue.js 3, TypeScript, Vite
+- **Backend**: Rust, Tauri 2.0
+- **Database**: SQLite with SQLx
+- **WebSocket**: Rust (tokio-tungstenite), Go (gorilla/websocket)
+- **UI**: Native system styling
+
+## License
+
+MIT
+
+## Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+## Support
+
+For issues and questions:
+
+- Check logs first (enable debug mode)
+- Ensure database file is accessible
+- Check system tray for application status
