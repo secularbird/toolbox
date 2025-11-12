@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 interface Reminder {
   id: number;
@@ -87,7 +88,7 @@ async function addReminder() {
     reminderTime.value = "";
     reminderFrequency.value = "once";
     message.value = "Reminder added successfully!";
-    await loadReminders();
+    // No need to manually reload - event listener will update automatically
   } catch (error) {
     message.value = `Error: ${error}`;
   }
@@ -109,7 +110,7 @@ async function loadReminders() {
 async function toggleReminder(id: number) {
   try {
     await invoke("toggle_reminder", { id });
-    await loadReminders();
+    // No need to manually reload - event listener will update automatically
   } catch (error) {
     message.value = `Error: ${error}`;
   }
@@ -118,7 +119,7 @@ async function toggleReminder(id: number) {
 async function deleteReminder(id: number) {
   try {
     await invoke("delete_reminder", { id });
-    await loadReminders();
+    // No need to manually reload - event listener will update automatically
   } catch (error) {
     message.value = `Error: ${error}`;
   }
@@ -160,9 +161,19 @@ async function loadDebugMode() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadReminders();
   loadDebugMode();
+  
+  // Listen for real-time reminder updates from any window
+  await listen<Reminder[]>('reminders-updated', (event) => {
+    console.log('[APP] Received reminders-updated event:', event.payload);
+    reminders.value = event.payload;
+    message.value = "Reminders updated in real-time ✨";
+    setTimeout(() => { message.value = ""; }, 2000);
+  });
+  
+  console.log('[APP] Event listener setup complete');
 });
 </script>
 
@@ -221,6 +232,17 @@ onMounted(() => {
           />
           <span class="debug-label">🐛 Debug Logs</span>
         </label>
+        <div class="debug-info" v-if="debugMode">
+          <div class="debug-item">
+            <small>Press <kbd>F12</kbd> for DevTools</small>
+          </div>
+          <div class="debug-item">
+            <small>{{ reminders.length }} reminders loaded</small>
+          </div>
+          <div class="debug-item">
+            <small>Real-time sync: Active ✓</small>
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -510,6 +532,33 @@ onMounted(() => {
 .debug-label {
   font-size: 0.9rem;
   color: #666;
+}
+
+.debug-info {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: #f0f7ff;
+  border-radius: 4px;
+  border-left: 3px solid #396cd8;
+}
+
+.debug-item {
+  margin: 0.25rem 0;
+  font-size: 0.75rem;
+  color: #555;
+  display: flex;
+  align-items: center;
+}
+
+.debug-item kbd {
+  padding: 2px 6px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 0.7rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  margin: 0 2px;
 }
 
 .main-content {

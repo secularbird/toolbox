@@ -153,6 +153,22 @@
       opacity: 0.7;
       font-size: 12px;
     }
+
+    .debug-info {
+      position: fixed;
+      bottom: 5px;
+      left: 5px;
+      font-size: 9px;
+      opacity: 0.5;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px 6px;
+      border-radius: 3px;
+      display: none;
+    }
+
+    .debug-info.visible {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -166,6 +182,10 @@
     <div class="list" id="list">
       <div class="empty">Loading...</div>
     </div>
+
+    <div id="debug-info" class="debug-info">
+      Press F12 to toggle DevTools | Press D for Debug Info
+    </div>
   </div>
 
   <script>
@@ -174,55 +194,32 @@
 
     let reminders = [];
 
-    // Listen for WebSocket updates
-    async function setupWebSocketListeners() {
-      console.log('[NOTIFICATION] Setting up WebSocket listeners');
+    // Listen for real-time updates from backend
+    async function setupEventListeners() {
+      console.log('[NOTIFICATION] Setting up event listeners');
       
       await listen('reminders-updated', (event) => {
-        console.log('[NOTIFICATION] Received WebSocket update event:', event.payload);
+        console.log('[NOTIFICATION] Received reminders-updated event:', event.payload);
         if (Array.isArray(event.payload)) {
-          // Replace with WebSocket data if it has items
-          const wsReminders = event.payload
+          // Update reminders from event
+          reminders = event.payload
             .filter(r => !r.completed)
             .sort((a, b) => new Date(a.time) - new Date(b.time));
-          console.log('[NOTIFICATION] WebSocket reminders count:', wsReminders.length);
           
-          if (wsReminders.length > 0) {
-            // Merge by ID to avoid duplicates
-            const reminderMap = new Map();
-            
-            // Add local reminders first
-            reminders.forEach(r => reminderMap.set(r.id, r));
-            
-            // Merge/override with WebSocket data
-            wsReminders.forEach(r => reminderMap.set(r.id, r));
-            
-            // Convert back to array
-            reminders = Array.from(reminderMap.values())
-              .sort((a, b) => new Date(a.time) - new Date(b.time));
-              
-            console.log('[NOTIFICATION] Merged reminders count:', reminders.length);
-            renderReminders();
-          }
+          console.log('[NOTIFICATION] Updated reminders count:', reminders.length);
+          renderReminders();
         } else {
           console.error('[NOTIFICATION] Invalid reminders data format:', event.payload);
         }
       });
-
-      await listen('reminder-update-status', (event) => {
-        console.log('[NOTIFICATION] Reminder update status:', event.payload);
-        // Refresh reminders after update
-        loadReminders();
-      });
       
-      console.log('[NOTIFICATION] WebSocket listeners set up successfully');
+      console.log('[NOTIFICATION] Event listeners set up successfully');
     }
 
     async function loadReminders() {
       try {
-        console.log('[NOTIFICATION] Loading reminders from local database');
+        console.log('[NOTIFICATION] Loading reminders from database');
         
-        // Load from local DB (always works, even offline)
         const allReminders = await invoke('get_reminders');
         console.log('[NOTIFICATION] Received', allReminders?.length || 0, 'reminders from backend');
         
@@ -239,29 +236,9 @@
         
         console.log('[NOTIFICATION] Filtered to', reminders.length, 'incomplete reminders');
         renderReminders();
-        
-        // Try to fetch from WebSocket in background (non-blocking)
-        tryWebSocketSync();
       } catch (error) {
         console.error('[NOTIFICATION] Failed to load reminders:', error);
         document.getElementById('list').innerHTML = '<div class="empty">Failed to load reminders</div>';
-      }
-    }
-    
-    async function tryWebSocketSync() {
-      try {
-        const connected = await invoke('ws_is_connected');
-        console.log('[NOTIFICATION] WebSocket connected:', connected);
-        
-        if (connected) {
-          console.log('[NOTIFICATION] Fetching from WebSocket server');
-          await invoke('ws_fetch_reminders');
-          console.log('[NOTIFICATION] WebSocket fetch request sent (data will arrive via event)');
-        } else {
-          console.log('[NOTIFICATION] WebSocket not connected, using local data only');
-        }
-      } catch (error) {
-        console.error('[NOTIFICATION] WebSocket sync error (non-fatal):', error);
       }
     }
 
@@ -272,19 +249,27 @@
       console.log('[NOTIFICATION] Rendering reminders, count:', reminders.length);
 
       if (reminders.length === 0) {
-        // Show empty state but don't close - backend will close when appropriate
-        console.log('[NOTIFICATION] No incomplete reminders to show');
+        console.log('[NOTIFICATION] No incomplete reminders to show - closing window');
         list.innerHTML = '<div class="empty">All tasks completed! ✓</div>';
         count.textContent = '';
         
-        // Backend will close this window on next check (30s)
+        // Close window after a short delay to show the completion message
+        setTimeout(async () => {
+          try {
+            const { getCurrentWindow } = window.__TAURI__.window;
+            const currentWindow = getCurrentWindow();
+            await currentWindow.close();
+            console.log('[NOTIFICATION] Window closed successfully');
+          } catch (error) {
+            console.error('[NOTIFICATION] Failed to close window:', error);
+          }
+        }, 1500);
+        
         return;
       }
 
       count.textContent = `${reminders.length}`;
 
-      console.log('[NOTIFICATION] Building HTML for reminders...');
-      
       console.log('[NOTIFICATION] Building HTML for reminders...');
       
       const html = reminders.map(r => {
@@ -332,28 +317,13 @@
         reminders = reminders.filter(r => r.id !== reminderId);
         renderReminders();
         
-        // Update local DB (always works)
+        // Update database - this will broadcast 'reminders-updated' event to all windows
         await invoke('toggle_reminder', { id: reminderId });
-        console.log('[NOTIFICATION] Reminder dismissed in local DB');
-        
-        // Try to sync with WebSocket in background (non-blocking, best-effort)
-        tryWebSocketUpdate(reminderId, true);
+        console.log('[NOTIFICATION] Reminder dismissed and update broadcasted');
       } catch (error) {
         console.error('[NOTIFICATION] Failed to dismiss:', error);
         // Reload on error
         await loadReminders();
-      }
-    }
-    
-    async function tryWebSocketUpdate(reminderId, completed) {
-      try {
-        const connected = await invoke('ws_is_connected');
-        if (connected) {
-          await invoke('ws_update_reminder', { id: reminderId, completed: completed });
-          console.log('[NOTIFICATION] Reminder update synced to WebSocket server');
-        }
-      } catch (error) {
-        console.error('[NOTIFICATION] WebSocket sync error (non-fatal):', error);
       }
     }
 
@@ -367,13 +337,77 @@
       }
     }
 
-    // Setup WebSocket listeners and load reminders on start
-    setupWebSocketListeners().then(() => {
-      loadReminders();
+    // Debug mode toggle
+    let debugMode = false;
+    
+    // Keyboard shortcuts for debugging
+    document.addEventListener('keydown', async (e) => {
+      // F12 or Cmd+Option+I (Mac) / Ctrl+Shift+I (Windows/Linux) - Toggle DevTools
+      if (e.key === 'F12' || 
+          (e.metaKey && e.altKey && e.key === 'i') ||
+          (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+        e.preventDefault();
+        console.log('[NOTIFICATION] Opening DevTools...');
+        // Note: DevTools will open if enabled in tauri.conf.json
+      }
+      
+      // Press 'D' to toggle debug info
+      if (e.key === 'd' || e.key === 'D') {
+        debugMode = !debugMode;
+        const debugInfo = document.getElementById('debug-info');
+        if (debugMode) {
+          debugInfo.classList.add('visible');
+          debugInfo.innerHTML = `
+            🐛 Debug Mode: ON<br>
+            Reminders: ${reminders.length}<br>
+            Last Update: ${new Date().toLocaleTimeString()}<br>
+            Press D to toggle off
+          `;
+          console.log('[NOTIFICATION] Debug mode enabled');
+          console.log('[NOTIFICATION] Current reminders:', reminders);
+        } else {
+          debugInfo.classList.remove('visible');
+          console.log('[NOTIFICATION] Debug mode disabled');
+        }
+      }
+      
+      // Press 'R' to manually reload reminders
+      if (e.key === 'r' || e.key === 'R') {
+        console.log('[NOTIFICATION] Manual reload triggered');
+        await loadReminders();
+      }
+      
+      // Press 'C' to clear console
+      if (e.key === 'c' || e.key === 'C') {
+        console.clear();
+        console.log('[NOTIFICATION] Console cleared');
+      }
     });
 
-    // Refresh every 30 seconds
-    setInterval(loadReminders, 30000);
+    // Log window loaded
+    console.log('[NOTIFICATION] Window loaded at:', new Date().toISOString());
+    console.log('[NOTIFICATION] Tauri version:', window.__TAURI__);
+
+    // Setup event listeners and load reminders on start
+    setupEventListeners().then(() => {
+      loadReminders();
+      console.log('[NOTIFICATION] Initialization complete');
+    });
+
+    // Refresh every 30 seconds (as backup, primary updates come via events)
+    setInterval(() => {
+      console.log('[NOTIFICATION] Periodic refresh at:', new Date().toLocaleTimeString());
+      loadReminders();
+    }, 3000);
+
+    // Log errors globally
+    window.addEventListener('error', (e) => {
+      console.error('[NOTIFICATION] Global error:', e.error);
+    });
+
+    window.addEventListener('unhandledrejection', (e) => {
+      console.error('[NOTIFICATION] Unhandled promise rejection:', e.reason);
+    });
   </script>
 </body>
 </html>
