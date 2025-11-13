@@ -24,6 +24,7 @@ pub fn run() {
             commands::get_due_reminders,
             commands::toggle_reminder,
             commands::delete_reminder,
+            commands::update_reminder,
             commands::set_debug_mode,
             commands::get_debug_mode,
             commands::broadcast_reminders,

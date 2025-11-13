@@ -163,3 +163,43 @@ pub async fn broadcast_reminders(
     
     Ok(())
 }
+
+#[tauri::command]
+pub async fn update_reminder(
+    id: u32,
+    title: String,
+    description: String,
+    time: String,
+    category: String,
+    frequency: String,
+    pool: tauri::State<'_, SqlitePool>,
+    app: AppHandle,
+) -> Result<(), String> {
+    info!("Updating reminder id={}: title='{}', category='{}', time='{}', frequency='{}'", 
+          id, title, category, time, frequency);
+    
+    sqlx::query(
+        "UPDATE reminders SET title = ?, description = ?, time = ?, category = ?, frequency = ? WHERE id = ?"
+    )
+    .bind(&title)
+    .bind(&description)
+    .bind(&time)
+    .bind(&category)
+    .bind(&frequency)
+    .bind(id as i64)
+    .execute(pool.inner())
+    .await
+    .map_err(|e| {
+        warn!("Failed to update reminder: {}", e);
+        e.to_string()
+    })?;
+    
+    // Broadcast update event to all windows
+    let reminders = crate::database::get_all_reminders(&pool)
+        .await
+        .map_err(|e| e.to_string())?;
+    let _ = app.emit("reminders-updated", &reminders);
+    info!("Broadcasted reminders-updated event after update");
+    
+    Ok(())
+}
