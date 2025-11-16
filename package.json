@@ -5,11 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vite build",
+    "build:check": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tauri": "tauri",
-    "build-server": "./build-server.sh",
-    "prebuild": "npm run build-server"
+    "tauri": "tauri"
   },
   "dependencies": {
     "vue": "^3.5.13",

@@ -6,6 +6,8 @@ use tokio::time::sleep;
 
 const CHECK_INTERVAL_SECONDS: u64 = 30;
 
+// Notification service is only available on desktop platforms
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub async fn start_notification_service(pool: SqlitePool, app: AppHandle) {
     info!("Starting notification service");
     
@@ -24,7 +26,7 @@ pub async fn start_notification_service(pool: SqlitePool, app: AppHandle) {
                         debug!("No incomplete reminders, closing notification if open");
                         // Close notification window if no incomplete reminders
                         if let Some(window) = app.get_webview_window("notification-list") {
-                            let _ = window.close();
+                            let _ = window.destroy();
                         }
                     }
                 }
@@ -36,6 +38,13 @@ pub async fn start_notification_service(pool: SqlitePool, app: AppHandle) {
     });
 }
 
+// Mobile stub - notifications handled differently on mobile
+#[cfg(any(target_os = "android", target_os = "ios"))]
+pub async fn start_notification_service(_pool: SqlitePool, _app: AppHandle) {
+    info!("Notification service not available on mobile platforms");
+}
+
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 async fn check_due_reminders(pool: &SqlitePool) -> Result<usize, sqlx::Error> {
     debug!("Checking for incomplete reminders");
     
@@ -52,6 +61,7 @@ async fn check_due_reminders(pool: &SqlitePool) -> Result<usize, sqlx::Error> {
     Ok(count.0 as usize)
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 async fn show_notification_list(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let window_label = "notification-list";
     
@@ -61,9 +71,7 @@ async fn show_notification_list(app: &AppHandle) -> Result<(), Box<dyn std::erro
             debug!("Notification window already visible, doing nothing");
             return Ok(());
         }
-        // Window exists but hidden, show it
-        let _ = window.show();
-        let _ = window.set_focus();
+        // Window exists but hidden, show it - not available on mobile
         debug!("Showing existing notification window");
         return Ok(());
     }
@@ -86,7 +94,6 @@ async fn show_notification_list(app: &AppHandle) -> Result<(), Box<dyn std::erro
         window_label,
         WebviewUrl::App("notification.html".into())
     )
-    .title("Reminders")
     .inner_size(width, height)
     .position(x, y)
     .resizable(false)
@@ -103,6 +110,7 @@ async fn show_notification_list(app: &AppHandle) -> Result<(), Box<dyn std::erro
     Ok(())
 }
 
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 fn get_screen_size(app: &AppHandle) -> Result<(f64, f64), Box<dyn std::error::Error>> {
     // Get primary monitor
     if let Some(monitor) = app.primary_monitor()? {
@@ -116,16 +124,23 @@ fn get_screen_size(app: &AppHandle) -> Result<(f64, f64), Box<dyn std::error::Er
 }
 
 #[tauri::command]
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 pub async fn dismiss_notification(
     app: AppHandle,
 ) -> Result<(), String> {
     let window_label = "notification-list";
     
     if let Some(window) = app.get_webview_window(window_label) {
-        window.close().map_err(|e| e.to_string())?;
+        window.destroy().map_err(|e| e.to_string())?;
         info!("Dismissed notification list");
     }
     
+    Ok(())
+}
+
+#[tauri::command]
+#[cfg(any(target_os = "android", target_os = "ios"))]
+pub async fn dismiss_notification(_app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 

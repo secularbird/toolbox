@@ -1,10 +1,11 @@
 mod models;
 mod commands;
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
 mod tray;
 mod database;
 mod notifications;
 
-use log::info;
+use log::{info, error};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -34,27 +35,42 @@ pub fn run() {
         .setup(|app| {
             info!("Setting up application...");
             
-            // Initialize database
-            let app_dir = app.path().app_data_dir().expect("Failed to get app data dir");
-            let db_path = app_dir.join("reminders.db");
-            info!("Database path: {:?}", db_path);
+            let app_handle = app.app_handle().clone();
             
-            let pool = tauri::async_runtime::block_on(async {
-                database::init_database(db_path).await.expect("Failed to initialize database")
+            // Initialize database asynchronously to avoid blocking on mobile
+            tauri::async_runtime::spawn(async move {
+                // Get app data directory
+                let app_dir = match app_handle.path().app_data_dir() {
+                    Ok(dir) => dir,
+                    Err(e) => {
+                        error!("Failed to get app data dir: {}", e);
+                        return;
+                    }
+                };
+                
+                let db_path = app_dir.join("reminders.db");
+                info!("Database path: {:?}", db_path);
+                
+                match database::init_database(db_path).await {
+                    Ok(pool) => {
+                        info!("Database initialized successfully");
+                        app_handle.manage(pool.clone());
+                        
+                        // Start notification service
+                        notifications::start_notification_service(pool, app_handle.clone()).await;
+                    }
+                    Err(e) => {
+                        error!("Failed to initialize database: {}", e);
+                    }
+                }
             });
             
-            // Store pool in app state
-            app.manage(pool.clone());
-            
-            // Start notification service
-            let app_handle = app.app_handle().clone();
-            tauri::async_runtime::spawn(notifications::start_notification_service(pool, app_handle));
-            
-            // Setup system tray
-            tray::setup_tray(app.app_handle())?;
-            
-            // Setup window handlers
-            tray::setup_window_handlers(app.app_handle())?;
+            // Setup system tray (desktop only)
+            #[cfg(not(any(target_os = "android", target_os = "ios")))]
+            {
+                tray::setup_tray(app.app_handle())?;
+                tray::setup_window_handlers(app.app_handle())?;
+            }
 
             info!("Application setup completed successfully");
             Ok(())

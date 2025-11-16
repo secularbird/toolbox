@@ -1,0 +1,516 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		12B073A1E092C5E363872D61 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2AC285E5677FDA1B5D3381F4 /* Metal.framework */; };
+		3727A2D2F63B50ADD64E7036 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB53DE27A944EC2F52059426 /* MetalKit.framework */; };
+		3D3BBCF5D2CF634409D6C811 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 47ABEDDCDB09E416DBE2ACD0 /* main.mm */; };
+		47A8AE4FC305D7E570E414D1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 6BA700FC1DD8885931ECEFA8 /* LaunchScreen.storyboard */; };
+		5BDA06A8786B66AF31FAE8D8 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = CD2DD8AE1137D39C737809D9 /* assets */; };
+		677ED2044C19C3974480E730 /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 13DF6EDA3953ACA0510744EB /* libapp.a */; };
+		947C3F71D65DCB675ABDB935 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E93AEC575A23ED99FA6CF5B9 /* Security.framework */; };
+		AB91B0EFB0E73132FEB943C0 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C544DB173032723DF6E8F6C0 /* CoreGraphics.framework */; };
+		B51DB562A16E3643C22C7C21 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D33637ED2921D0A9DD0F14B /* UIKit.framework */; };
+		BD083E890E388E90D6E626C2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9CCF4EB426CB62CA2C0C3008 /* Assets.xcassets */; };
+		DFA2EB2ADAAF10C51CCB4260 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D43B66CED4D33996DE88BD66 /* QuartzCore.framework */; };
+		F47F8D064AAF39CB99A6F156 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 14D7A0D147B7D85E105F9337 /* WebKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		13DF6EDA3953ACA0510744EB /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		14D7A0D147B7D85E105F9337 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		204ADA81E8D11F35D05367F3 /* tauri-vue-app_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "tauri-vue-app_iOS.entitlements"; sourceTree = "<group>"; };
+		26F1607F2F94C3E82A8628BD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2AC285E5677FDA1B5D3381F4 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		3630F479E8D6BFBA6F65BFF3 /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		38A0024E9F853B95A6A8D56B /* operations.rs */ = {isa = PBXFileReference; path = operations.rs; sourceTree = "<group>"; };
+		404C9E302A0ECA81364924DC /* init.rs */ = {isa = PBXFileReference; path = init.rs; sourceTree = "<group>"; };
+		4131BAB512713E0B5F872030 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		42BD61F7B62AC39EEA6E6706 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		47ABEDDCDB09E416DBE2ACD0 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		4D33637ED2921D0A9DD0F14B /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		5647796D3B1BBE8032A79266 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		6BA700FC1DD8885931ECEFA8 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		907726B22378518AC8CD0419 /* reminder.rs */ = {isa = PBXFileReference; path = reminder.rs; sourceTree = "<group>"; };
+		91E85763304B6CEC5DEB5027 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		9CCF4EB426CB62CA2C0C3008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A198EB9F54CF7CA651A6B797 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		A941B9FAAFD88A43E4A5599E /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		C544DB173032723DF6E8F6C0 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		CD2DD8AE1137D39C737809D9 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		D43B66CED4D33996DE88BD66 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		DB53DE27A944EC2F52059426 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		DB568F7C7FE9A0E4283F19D1 /* mod.rs */ = {isa = PBXFileReference; path = mod.rs; sourceTree = "<group>"; };
+		E186DDAB7F7E04371BB1EB83 /* tauri-vue-app_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "tauri-vue-app_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E93AEC575A23ED99FA6CF5B9 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		EB6727B1F45478093ACDCB4D /* ARCHITECTURE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ARCHITECTURE.md; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F923808AB6448AC9EB3EC90F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				677ED2044C19C3974480E730 /* libapp.a in Frameworks */,
+				AB91B0EFB0E73132FEB943C0 /* CoreGraphics.framework in Frameworks */,
+				12B073A1E092C5E363872D61 /* Metal.framework in Frameworks */,
+				3727A2D2F63B50ADD64E7036 /* MetalKit.framework in Frameworks */,
+				DFA2EB2ADAAF10C51CCB4260 /* QuartzCore.framework in Frameworks */,
+				947C3F71D65DCB675ABDB935 /* Security.framework in Frameworks */,
+				B51DB562A16E3643C22C7C21 /* UIKit.framework in Frameworks */,
+				F47F8D064AAF39CB99A6F156 /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		00DBFDE2A3E46B8FCC55ABF4 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				BAC256B25AE9B343376E44BD /* tauri-vue-app */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		080A3C410169B21E2B1D512C /* Externals */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Externals;
+			sourceTree = "<group>";
+		};
+		343B8CDB2B9EF8F1C5987974 /* tauri-vue-app_iOS */ = {
+			isa = PBXGroup;
+			children = (
+				26F1607F2F94C3E82A8628BD /* Info.plist */,
+				204ADA81E8D11F35D05367F3 /* tauri-vue-app_iOS.entitlements */,
+			);
+			path = "tauri-vue-app_iOS";
+			sourceTree = "<group>";
+		};
+		43A5773AC41467E0973E6DAE /* notifications */ = {
+			isa = PBXGroup;
+			children = (
+				5647796D3B1BBE8032A79266 /* mod.rs */,
+			);
+			path = notifications;
+			sourceTree = "<group>";
+		};
+		50498817924957A52FA318DF /* tray */ = {
+			isa = PBXGroup;
+			children = (
+				DB568F7C7FE9A0E4283F19D1 /* mod.rs */,
+			);
+			path = tray;
+			sourceTree = "<group>";
+		};
+		562E4C989D15D1344601A97B = {
+			isa = PBXGroup;
+			children = (
+				CD2DD8AE1137D39C737809D9 /* assets */,
+				9CCF4EB426CB62CA2C0C3008 /* Assets.xcassets */,
+				6BA700FC1DD8885931ECEFA8 /* LaunchScreen.storyboard */,
+				080A3C410169B21E2B1D512C /* Externals */,
+				00DBFDE2A3E46B8FCC55ABF4 /* Sources */,
+				89EB631B232B97A5F5EC0FE6 /* src */,
+				343B8CDB2B9EF8F1C5987974 /* tauri-vue-app_iOS */,
+				A50DFBC8EC6450FB699981E6 /* Frameworks */,
+				97BFC396B54B72198310A000 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		61AA8EDD1DEF00BA348DF50D /* bindings */ = {
+			isa = PBXGroup;
+			children = (
+				A941B9FAAFD88A43E4A5599E /* bindings.h */,
+			);
+			path = bindings;
+			sourceTree = "<group>";
+		};
+		89EB631B232B97A5F5EC0FE6 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				EB6727B1F45478093ACDCB4D /* ARCHITECTURE.md */,
+				3630F479E8D6BFBA6F65BFF3 /* lib.rs */,
+				A198EB9F54CF7CA651A6B797 /* main.rs */,
+				AA79771224B5E116276C1F20 /* commands */,
+				9D2088FB2EE3E0948F950228 /* database */,
+				CA7973374127FD46BD5B1F59 /* models */,
+				43A5773AC41467E0973E6DAE /* notifications */,
+				50498817924957A52FA318DF /* tray */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		97BFC396B54B72198310A000 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E186DDAB7F7E04371BB1EB83 /* tauri-vue-app_iOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9D2088FB2EE3E0948F950228 /* database */ = {
+			isa = PBXGroup;
+			children = (
+				404C9E302A0ECA81364924DC /* init.rs */,
+				42BD61F7B62AC39EEA6E6706 /* mod.rs */,
+				38A0024E9F853B95A6A8D56B /* operations.rs */,
+			);
+			path = database;
+			sourceTree = "<group>";
+		};
+		A50DFBC8EC6450FB699981E6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C544DB173032723DF6E8F6C0 /* CoreGraphics.framework */,
+				13DF6EDA3953ACA0510744EB /* libapp.a */,
+				2AC285E5677FDA1B5D3381F4 /* Metal.framework */,
+				DB53DE27A944EC2F52059426 /* MetalKit.framework */,
+				D43B66CED4D33996DE88BD66 /* QuartzCore.framework */,
+				E93AEC575A23ED99FA6CF5B9 /* Security.framework */,
+				4D33637ED2921D0A9DD0F14B /* UIKit.framework */,
+				14D7A0D147B7D85E105F9337 /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		AA79771224B5E116276C1F20 /* commands */ = {
+			isa = PBXGroup;
+			children = (
+				91E85763304B6CEC5DEB5027 /* mod.rs */,
+			);
+			path = commands;
+			sourceTree = "<group>";
+		};
+		BAC256B25AE9B343376E44BD /* tauri-vue-app */ = {
+			isa = PBXGroup;
+			children = (
+				47ABEDDCDB09E416DBE2ACD0 /* main.mm */,
+				61AA8EDD1DEF00BA348DF50D /* bindings */,
+			);
+			path = "tauri-vue-app";
+			sourceTree = "<group>";
+		};
+		CA7973374127FD46BD5B1F59 /* models */ = {
+			isa = PBXGroup;
+			children = (
+				4131BAB512713E0B5F872030 /* mod.rs */,
+				907726B22378518AC8CD0419 /* reminder.rs */,
+			);
+			path = models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		653D169BB140D565A01BEFFF /* tauri-vue-app_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A297BE5CCAF0B18B9DAEDE87 /* Build configuration list for PBXNativeTarget "tauri-vue-app_iOS" */;
+			buildPhases = (
+				C85610979A6A12ED77C5B49B /* Build Rust Code */,
+				3099E7643A7BD8378749F78A /* Sources */,
+				836AE72D4D03E98AF6832EE1 /* Resources */,
+				F923808AB6448AC9EB3EC90F /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "tauri-vue-app_iOS";
+			packageProductDependencies = (
+			);
+			productName = "tauri-vue-app_iOS";
+			productReference = E186DDAB7F7E04371BB1EB83 /* tauri-vue-app_iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8E4E59821459EFF934BFE1FA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = 15ABCA0149A6F44D91340E2E /* Build configuration list for PBXProject "tauri-vue-app" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 562E4C989D15D1344601A97B;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				653D169BB140D565A01BEFFF /* tauri-vue-app_iOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		836AE72D4D03E98AF6832EE1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BD083E890E388E90D6E626C2 /* Assets.xcassets in Resources */,
+				47A8AE4FC305D7E570E414D1 /* LaunchScreen.storyboard in Resources */,
+				5BDA06A8786B66AF31FAE8D8 /* assets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C85610979A6A12ED77C5B49B /* Build Rust Code */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Code";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a",
+				"$(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "npm run -- tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3099E7643A7BD8378749F78A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3D3BBCF5D2CF634409D6C811 /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2872AC37CDC71D1189823A03 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+		355F3768495B7A4231B81138 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+		A888A4B409EA8A40A97795AF /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "tauri-vue-app_iOS/tauri-vue-app_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "tauri-vue-app_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.yaozhuang.tauri-vue-app;
+				PRODUCT_NAME = "tauri-vue-app";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = debug;
+		};
+		E395E84C9F671B0C7EDCEF1E /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "tauri-vue-app_iOS/tauri-vue-app_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "tauri-vue-app_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.yaozhuang.tauri-vue-app;
+				PRODUCT_NAME = "tauri-vue-app";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		15ABCA0149A6F44D91340E2E /* Build configuration list for PBXProject "tauri-vue-app" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2872AC37CDC71D1189823A03 /* debug */,
+				355F3768495B7A4231B81138 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		A297BE5CCAF0B18B9DAEDE87 /* Build configuration list for PBXNativeTarget "tauri-vue-app_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A888A4B409EA8A40A97795AF /* debug */,
+				E395E84C9F671B0C7EDCEF1E /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8E4E59821459EFF934BFE1FA /* Project object */;
+}
