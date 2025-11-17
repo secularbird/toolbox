@@ -4,6 +4,7 @@ mod commands;
 mod tray;
 mod database;
 mod notifications;
+mod disk_scanner;
 
 use log::{info, error};
 use tauri::Manager;
@@ -30,7 +31,11 @@ pub fn run() {
             commands::get_debug_mode,
             commands::broadcast_reminders,
             notifications::dismiss_notification,
-            notifications::snooze_reminder
+            notifications::snooze_reminder,
+            disk_scanner::scan_directory,
+            disk_scanner::get_home_directory,
+            disk_scanner::get_system_roots,
+            disk_scanner::format_bytes
         ])
         .setup(|app| {
             info!("Setting up application...");

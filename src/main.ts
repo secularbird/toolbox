@@ -1,5 +1,5 @@
 import { createApp } from "vue";
-import App from "./App.vue";
+import App from "./AppSimple.vue";
 
 // Enable debug mode in development
 const app = createApp(App);
