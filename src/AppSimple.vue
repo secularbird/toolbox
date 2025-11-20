@@ -2,8 +2,9 @@
 import { ref } from 'vue';
 import DiskScanner from './components/DiskScanner.vue';
 import RemindersApp from './components/RemindersApp.vue';
+import WikiApp from './components/WikiApp.vue';
 
-const currentView = ref<'reminders' | 'diskscanner'>('reminders');
+const currentView = ref<'reminders' | 'diskscanner' | 'wiki'>('reminders');
 </script>
 
 <template>
@@ -17,6 +18,13 @@ const currentView = ref<'reminders' | 'diskscanner'>('reminders');
         📝 Reminders
       </button>
       <button 
+        @click="currentView = 'wiki'" 
+        :class="{ active: currentView === 'wiki' }"
+        class="nav-btn"
+      >
+        📚 Wiki
+      </button>
+      <button 
         @click="currentView = 'diskscanner'" 
         :class="{ active: currentView === 'diskscanner' }"
         class="nav-btn"
@@ -27,6 +35,7 @@ const currentView = ref<'reminders' | 'diskscanner'>('reminders');
 
     <div class="view-container">
       <RemindersApp v-if="currentView === 'reminders'" />
+      <WikiApp v-else-if="currentView === 'wiki'" />
       <DiskScanner v-else-if="currentView === 'diskscanner'" />
     </div>
   </div>

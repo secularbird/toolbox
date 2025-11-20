@@ -5,6 +5,8 @@ mod tray;
 mod database;
 mod notifications;
 mod disk_scanner;
+mod evidence_commands;
+mod wiki_commands;
 
 use log::{info, error};
 use tauri::Manager;
@@ -35,7 +37,25 @@ pub fn run() {
             disk_scanner::scan_directory,
             disk_scanner::get_home_directory,
             disk_scanner::get_system_roots,
-            disk_scanner::format_bytes
+            disk_scanner::format_bytes,
+            evidence_commands::add_evidence_to_reminder,
+            evidence_commands::get_reminder_evidence,
+            evidence_commands::get_all_evidence_items,
+            evidence_commands::update_evidence_desc,
+            evidence_commands::delete_evidence_item,
+            evidence_commands::save_uploaded_file,
+            evidence_commands::get_evidence_file_path,
+            evidence_commands::open_evidence_file,
+            evidence_commands::get_mime_type,
+            evidence_commands::format_file_size,
+            wiki_commands::create_wiki_page,
+            wiki_commands::update_wiki_page,
+            wiki_commands::get_wiki_page,
+            wiki_commands::list_wiki_pages,
+            wiki_commands::delete_wiki_page,
+            wiki_commands::search_wiki_pages,
+            wiki_commands::list_wiki_revisions,
+            wiki_commands::restore_wiki_revision,
         ])
         .setup(|app| {
             info!("Setting up application...");

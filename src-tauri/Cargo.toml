@@ -28,6 +28,7 @@ chrono = { version = "0.4", features = ["serde"] }
 urlencoding = "2.1"
 tauri-plugin-opener = "2"
 dirs = "5.0"
+uuid = { version = "1.10", features = ["v4"] }
 
 # Tauri with mobile support
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
@@ -36,4 +37,3 @@ tauri = { version = "2", features = ["protocol-asset"] }
 # Desktop-specific features (tray icon only works on desktop)
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri = { version = "2", features = ["protocol-asset", "tray-icon"] }
-

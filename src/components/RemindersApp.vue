@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 interface Reminder {
   id: number;
@@ -21,6 +22,20 @@ interface Category {
   name: string;
   icon: string;
   color: string;
+}
+
+interface Evidence {
+  id: number;
+  reminder_id: number;
+  file_type: string;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  thumbnail_path: string | null;
+  description: string | null;
+  metadata: string | null;
+  created_at: string;
 }
 
 // Smart Lists (like macOS Reminders)
@@ -54,7 +69,6 @@ const reminderDescription = ref("");
 const reminderTime = ref("");
 const reminderCategory = ref("personal");
 const reminderFrequency = ref("once");
-const reminderPriority = ref(0);
 const reminderFlagged = ref(false);
 const reminders = ref<Reminder[]>([]);
 const message = ref("");
@@ -64,6 +78,12 @@ const debugMode = ref(true);
 const showDetails = ref(false);
 const selectedReminder = ref<Reminder | null>(null);
 const editingReminder = ref<Partial<Reminder>>({});
+
+// Evidence/Attachment state
+const evidenceList = ref<Evidence[]>([]);
+const uploadingFile = ref(false);
+const previewImage = ref<string | null>(null);
+const fileInputRef = ref<HTMLInputElement | null>(null);
 
 const filteredReminders = computed(() => {
   const now = new Date();
@@ -163,11 +183,6 @@ async function addReminder() {
   }
 }
 
-function getFrequencyLabel(frequency: string): string {
-  const option = frequencyOptions.find(opt => opt.value === frequency);
-  return option ? `${option.icon} ${option.label}` : frequency;
-}
-
 async function loadReminders() {
   try {
     reminders.value = await invoke("get_reminders");
@@ -194,34 +209,19 @@ async function toggleFlag(id: number) {
   }
 }
 
-function getPriorityColor(priority: number): string {
-  switch (priority) {
-    case 1: return "#34c759"; // low - green
-    case 2: return "#ff9500"; // medium - orange
-    case 3: return "#ff3b30"; // high - red
-    default: return "transparent";
-  }
-}
-
-function getPriorityLabel(priority: number): string {
-  switch (priority) {
-    case 1: return "!";
-    case 2: return "!!";
-    case 3: return "!!!";
-    default: return "";
-  }
-}
-
 function selectReminder(reminder: Reminder) {
   selectedReminder.value = reminder;
   editingReminder.value = { ...reminder };
   showDetails.value = true;
+  loadReminderEvidence(reminder.id);
 }
 
 function closeDetails() {
   showDetails.value = false;
   selectedReminder.value = null;
   editingReminder.value = {};
+  evidenceList.value = [];
+  previewImage.value = null;
 }
 
 async function saveReminderDetails() {
@@ -293,6 +293,121 @@ async function loadDebugMode() {
   } catch (error) {
     console.error("Failed to get debug mode:", error);
   }
+}
+
+// Evidence/Attachment Functions
+async function loadReminderEvidence(reminderId: number) {
+  try {
+    evidenceList.value = await invoke("get_reminder_evidence", { reminderId });
+  } catch (error) {
+    console.error("Failed to load evidence:", error);
+  }
+}
+
+function triggerFilePicker() {
+  fileInputRef.value?.click();
+}
+
+async function handleFileUpload(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || !input.files[0] || !editingReminder.value.id) return;
+  
+  const file = input.files[0];
+  uploadingFile.value = true;
+  
+  try {
+    // Read file as array buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const fileData = Array.from(new Uint8Array(arrayBuffer));
+    
+    // Save file to app data directory
+    const savedPath = await invoke<string>("save_uploaded_file", {
+      fileName: file.name,
+      fileData,
+    });
+    
+    // Get mime type
+    const mimeType = await invoke<string>("get_mime_type", { filePath: savedPath });
+    
+    // Determine file type
+    let fileType = "document";
+    if (mimeType.startsWith("image/")) fileType = "image";
+    else if (mimeType.startsWith("video/")) fileType = "video";
+    else if (mimeType.startsWith("audio/")) fileType = "audio";
+    
+    // Add evidence to database
+    const evidence = await invoke<Evidence>("add_evidence_to_reminder", {
+      reminderId: editingReminder.value.id,
+      fileType,
+      filePath: savedPath,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType,
+      thumbnailPath: null,
+      description: null,
+      metadata: null,
+    });
+    
+    evidenceList.value.push(evidence);
+    message.value = "File attached successfully!";
+    setTimeout(() => { message.value = ""; }, 2000);
+  } catch (error) {
+    message.value = `Error uploading file: ${error}`;
+  } finally {
+    uploadingFile.value = false;
+    input.value = "";
+  }
+}
+
+async function deleteEvidence(evidenceId: number) {
+  try {
+    await invoke("delete_evidence_item", { evidenceId });
+    evidenceList.value = evidenceList.value.filter(e => e.id !== evidenceId);
+    message.value = "Attachment deleted";
+    setTimeout(() => { message.value = ""; }, 2000);
+  } catch (error) {
+    message.value = `Error: ${error}`;
+  }
+}
+
+async function openEvidence(filePath: string) {
+  try {
+    await invoke("open_evidence_file", { filePath });
+  } catch (error) {
+    message.value = `Error opening file: ${error}`;
+  }
+}
+
+function formatFileSize(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = bytes;
+  let unitIndex = 0;
+  
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+  
+  return `${size.toFixed(2)} ${units[unitIndex]}`;
+}
+
+function getFileIcon(fileType: string, mimeType: string): string {
+  if (fileType === "image") return "🖼️";
+  if (fileType === "video") return "🎥";
+  if (fileType === "audio") return "🎵";
+  if (mimeType.includes("pdf")) return "📄";
+  if (mimeType.includes("word")) return "📝";
+  if (mimeType.includes("excel") || mimeType.includes("spreadsheet")) return "📊";
+  if (mimeType.includes("zip") || mimeType.includes("archive")) return "📦";
+  return "📎";
+}
+
+function showImagePreview(filePath: string) {
+  previewImage.value = convertFileSrc(filePath);
+}
+
+function closeImagePreview() {
+  previewImage.value = null;
 }
 
 onMounted(async () => {
@@ -583,6 +698,58 @@ onMounted(async () => {
           </button>
         </div>
 
+        <!-- Attachments Section -->
+        <div class="detail-section">
+          <label class="detail-label">Attachments</label>
+          
+          <div class="attachment-upload">
+            <input 
+              ref="fileInputRef"
+              type="file" 
+              id="file-upload" 
+              @change="handleFileUpload" 
+              style="display: none"
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.json,.zip"
+            />
+            <button 
+              @click="triggerFilePicker"
+              class="btn-upload"
+              :disabled="uploadingFile"
+            >
+              📎 {{ uploadingFile ? 'Uploading...' : 'Add Attachment' }}
+            </button>
+          </div>
+
+          <div v-if="evidenceList.length > 0" class="attachment-list">
+            <div 
+              v-for="evidence in evidenceList" 
+              :key="evidence.id"
+              class="attachment-item"
+            >
+              <div class="attachment-info" @click="evidence.file_type === 'image' ? showImagePreview(evidence.file_path) : openEvidence(evidence.file_path)">
+                <span class="attachment-icon">{{ getFileIcon(evidence.file_type, evidence.mime_type) }}</span>
+                <div class="attachment-details">
+                  <div class="attachment-name">{{ evidence.file_name }}</div>
+                  <div class="attachment-meta">
+                    {{ formatFileSize(evidence.file_size) }} • {{ evidence.file_type }}
+                  </div>
+                </div>
+              </div>
+              <button 
+                @click="deleteEvidence(evidence.id)"
+                class="btn-delete-attachment"
+                title="Delete attachment"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="attachment-empty">
+            No attachments yet
+          </div>
+        </div>
+
         <div class="detail-actions">
           <button @click="saveReminderDetails" class="btn-save-detail">
             Save Changes
@@ -593,6 +760,14 @@ onMounted(async () => {
         </div>
       </div>
     </aside>
+
+    <!-- Image Preview Modal -->
+    <div v-if="previewImage" class="image-preview-modal" @click="closeImagePreview">
+      <div class="image-preview-content" @click.stop>
+        <button @click="closeImagePreview" class="btn-close-preview">✕</button>
+        <img :src="previewImage" alt="Preview" class="preview-image" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1598,6 +1773,167 @@ select {
   .btn-delete-detail:hover {
     background: #ff453a;
     color: white;
+  }
+
+  /* Attachments Section */
+  .attachment-upload {
+    margin-bottom: 12px;
+  }
+
+  .btn-upload {
+    width: 100%;
+    padding: 10px 16px;
+    background: #f2f2f7;
+    border: 1px dashed #c6c6c8;
+    border-radius: 8px;
+    color: #007aff;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-upload:hover:not(:disabled) {
+    background: #e5e5ea;
+    border-color: #007aff;
+  }
+
+  .btn-upload:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .attachment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .attachment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background: #f2f2f7;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+
+  .attachment-item:hover {
+    background: #e5e5ea;
+  }
+
+  .attachment-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    cursor: pointer;
+  }
+
+  .attachment-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .attachment-details {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .attachment-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1c1c1e;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .attachment-meta {
+    font-size: 12px;
+    color: #8e8e93;
+    margin-top: 2px;
+  }
+
+  .btn-delete-attachment {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px 8px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+  }
+
+  .btn-delete-attachment:hover {
+    opacity: 1;
+  }
+
+  .attachment-empty {
+    padding: 20px;
+    text-align: center;
+    color: #8e8e93;
+    font-size: 14px;
+  }
+
+  /* Image Preview Modal */
+  .image-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .image-preview-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-close-preview {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    z-index: 1;
+  }
+
+  .btn-close-preview:hover {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  .preview-image {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 8px;
   }
 }
 

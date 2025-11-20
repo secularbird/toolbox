@@ -54,7 +54,6 @@ const reminderDescription = ref("");
 const reminderTime = ref("");
 const reminderCategory = ref("personal");
 const reminderFrequency = ref("once");
-const reminderPriority = ref(0);
 const reminderFlagged = ref(false);
 const reminders = ref<Reminder[]>([]);
 const message = ref("");
@@ -163,11 +162,6 @@ async function addReminder() {
   }
 }
 
-function getFrequencyLabel(frequency: string): string {
-  const option = frequencyOptions.find(opt => opt.value === frequency);
-  return option ? `${option.icon} ${option.label}` : frequency;
-}
-
 async function loadReminders() {
   try {
     reminders.value = await invoke("get_reminders");
@@ -191,24 +185,6 @@ async function toggleFlag(id: number) {
     reminder.flagged = !reminder.flagged;
     // TODO: Call backend to update flagged status
     // await invoke("update_reminder_flag", { id, flagged: reminder.flagged });
-  }
-}
-
-function getPriorityColor(priority: number): string {
-  switch (priority) {
-    case 1: return "#34c759"; // low - green
-    case 2: return "#ff9500"; // medium - orange
-    case 3: return "#ff3b30"; // high - red
-    default: return "transparent";
-  }
-}
-
-function getPriorityLabel(priority: number): string {
-  switch (priority) {
-    case 1: return "!";
-    case 2: return "!!";
-    case 3: return "!!!";
-    default: return "";
   }
 }
 

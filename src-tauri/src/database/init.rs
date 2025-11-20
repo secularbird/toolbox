@@ -58,6 +58,38 @@ async fn create_tables(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     .execute(pool)
     .await?;
     
+    // Create evidence table for rich media attachments
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS evidence (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reminder_id INTEGER NOT NULL,
+            file_type TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            file_name TEXT NOT NULL,
+            file_size INTEGER NOT NULL,
+            mime_type TEXT NOT NULL,
+            thumbnail_path TEXT,
+            description TEXT,
+            metadata TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (reminder_id) REFERENCES reminders(id) ON DELETE CASCADE
+        )
+        "#
+    )
+    .execute(pool)
+    .await?;
+    
+    // Create index for faster lookups
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_evidence_reminder_id 
+        ON evidence(reminder_id)
+        "#
+    )
+    .execute(pool)
+    .await?;
+    
     info!("Database tables created successfully");
     Ok(())
 }
