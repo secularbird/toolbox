@@ -1,8 +1,43 @@
 import { marked, type RendererObject } from 'marked';
 import hljs from 'highlight.js';
+import plantumlEncoder from 'plantuml-encoder';
+
+// Generate a unique ID for each diagram
+let diagramCounter = 0;
 
 const renderer: RendererObject = {
   code({ text, lang }) {
+    // Handle PlantUML diagrams
+    if (lang === 'plantuml') {
+      try {
+        const encoded = plantumlEncoder.encode(text);
+        const url = `https://www.plantuml.com/plantuml/svg/${encoded}`;
+        const id = `plantuml-${diagramCounter++}`;
+        return `<div class="diagram-container plantuml-container" id="${id}">
+          <img src="${url}" alt="PlantUML Diagram" class="diagram-image" />
+        </div>`;
+      } catch (err) {
+        console.error('PlantUML encoding error:', err);
+        return `<pre class="diagram-error">Error rendering PlantUML diagram</pre>`;
+      }
+    }
+
+    // Handle Mermaid diagrams
+    if (lang === 'mermaid') {
+      const id = `mermaid-${diagramCounter++}`;
+      // Escape HTML to prevent injection
+      const escapedText = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+      return `<div class="diagram-container mermaid-container" id="${id}">
+        <pre class="mermaid">${escapedText}</pre>
+      </div>`;
+    }
+
+    // Handle regular code blocks with syntax highlighting
     const language = lang && hljs.getLanguage(lang) ? lang : undefined;
     const highlighted = language
       ? hljs.highlight(text, { language }).value
@@ -33,12 +68,15 @@ export function sanitizeHtml(dirty: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(dirty, 'text/html');
 
+  // Allow SVG and diagram-related elements for PlantUML and Mermaid
   const blockedTags = new Set(['script', 'style', 'iframe', 'object', 'embed', 'link']);
 
   const traverse = (node: Element | ChildNode) => {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as Element;
-      if (blockedTags.has(el.tagName.toLowerCase())) {
+      const tagName = el.tagName.toLowerCase();
+      
+      if (blockedTags.has(tagName)) {
         el.remove();
         return;
       }

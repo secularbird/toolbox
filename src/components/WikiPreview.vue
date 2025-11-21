@@ -1,12 +1,48 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch, nextTick, onMounted } from 'vue';
 import { renderMarkdown } from '../utils/markdown';
+import mermaid from 'mermaid';
 
 const props = defineProps<{
   content: string;
 }>();
 
 const htmlContent = computed(() => renderMarkdown(props.content));
+
+// Initialize Mermaid with configuration
+onMounted(() => {
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'default',
+    securityLevel: 'strict',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+  });
+});
+
+// Re-render Mermaid diagrams when content changes
+watch(htmlContent, async () => {
+  await nextTick();
+  try {
+    // Find all mermaid elements that haven't been processed
+    const mermaidElements = document.querySelectorAll('.mermaid:not([data-processed])');
+    mermaidElements.forEach((element) => {
+      element.setAttribute('data-processed', 'true');
+    });
+    
+    if (mermaidElements.length > 0) {
+      await mermaid.run({
+        querySelector: '.mermaid:not([data-processed="rendered"])',
+      });
+      
+      // Mark as fully rendered
+      mermaidElements.forEach((element) => {
+        element.setAttribute('data-processed', 'rendered');
+      });
+    }
+  } catch (error) {
+    console.error('Mermaid rendering error:', error);
+  }
+});
 </script>
 
 <template>
@@ -146,6 +182,40 @@ const htmlContent = computed(() => renderMarkdown(props.content));
   border: 0;
 }
 
+/* Diagram styles */
+.preview-content :deep(.diagram-container) {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--diagram-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+}
+
+.preview-content :deep(.diagram-image) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.preview-content :deep(.mermaid) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+.preview-content :deep(.diagram-error) {
+  color: var(--error-color);
+  padding: 12px;
+  background: var(--error-bg);
+  border-radius: 6px;
+  font-family: monospace;
+}
+
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
   .wiki-preview {
@@ -157,6 +227,9 @@ const htmlContent = computed(() => renderMarkdown(props.content));
     --code-bg: #2c2c2e;
     --code-block-bg: #2c2c2e;
     --table-header-bg: #2c2c2e;
+    --diagram-bg: #2c2c2e;
+    --error-color: #ff453a;
+    --error-bg: rgba(255, 69, 58, 0.1);
   }
 }
 
@@ -171,6 +244,9 @@ const htmlContent = computed(() => renderMarkdown(props.content));
     --code-bg: #f5f5f7;
     --code-block-bg: #f5f5f7;
     --table-header-bg: #f5f5f7;
+    --diagram-bg: #fafafa;
+    --error-color: #ff3b30;
+    --error-bg: rgba(255, 59, 48, 0.1);
   }
 }
 </style>
