@@ -4,6 +4,27 @@
 
 A powerful multi-tool desktop application built with Tauri 2, Vue.js 3, and Rust, providing a privacy-focused local-first experience.
 
+## 📑 Table of Contents | 目录
+
+- [Integrated Features | 集成功能](#-集成功能--integrated-features)
+- [Features Overview | 功能概览](#-features-overview)
+- [HMI Design | HMI 设计](#️-hmi-设计--hmi-design)
+- [Architecture | 架构](#️-architecture--架构文档)
+- [Quick Start | 快速开始](#-quick-start)
+- [Usage Guide | 使用指南](#-usage-guide)
+- [Components | 组件](#-components)
+- [Technologies | 技术栈](#️-technologies)
+- [Project Structure | 项目结构](#-project-structure)
+- [Configuration | 配置](#configuration)
+- [Troubleshooting | 故障排除](#troubleshooting)
+- [Roadmap | 路线图](#-roadmap--future-features)
+- [Changelog | 更新日志](#-changelog)
+- [Documentation | 文档](#-documentation)
+- [Contributing | 贡献](#contributing)
+- [License | 许可证](#license)
+
+---
+
 ## 📦 集成功能 | Integrated Features
 
 This application combines three powerful tools in one unified interface:
@@ -851,7 +872,26 @@ MIT
 
 ## 📝 Changelog
 
-### v0.2.0 (Current)
+### v0.3.0 (Current) - Multi-Tool Integration
+- ✨ Integrated Wiki knowledge management system
+  - Markdown editor with live preview
+  - Version control and revision history
+  - Full-text search
+  - Notebooks and tags organization
+- ✨ Integrated Disk Scanner tool
+  - Recursive directory scanning
+  - Visual size representation
+  - Depth limiting for performance
+  - Quick access to home and system roots
+- ✨ Added Evidence attachment system for reminders
+  - File attachments support
+  - Preview and metadata
+  - Organized storage
+- 📚 Comprehensive architecture documentation
+- 🎨 Unified navigation with tab interface
+- 🌐 Android platform support
+
+### v0.2.0
 - ✨ Redesigned UI to match macOS Reminders
 - ✨ Added Today list with auto-time feature
 - ✨ Double-click to edit in detail panel
@@ -868,6 +908,14 @@ MIT
 - Notification system
 - System tray integration
 - SQLite storage
+
+## 📚 Documentation
+
+- **[README.md](README.md)** - Main documentation (this file)
+- **[SOFTWARE_ARCHITECTURE.md](SOFTWARE_ARCHITECTURE.md)** - Detailed architecture documentation
+- **[使用说明.md](使用说明.md)** - Chinese usage guide
+- **[DISK_SCANNER_README.md](DISK_SCANNER_README.md)** - Disk Scanner specific documentation
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Implementation summary
 
 ## 📧 Support
 
