@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, nextTick, onMounted, ref } from 'vue';
+import { watch, nextTick, onMounted, ref } from 'vue';
 import { renderMarkdown } from '../utils/markdown';
 import mermaid from 'mermaid';
 
@@ -7,7 +7,25 @@ const props = defineProps<{
   content: string;
 }>();
 
-const htmlContent = computed(() => renderMarkdown(props.content));
+const renderedContent = ref('');
+let debounceTimer: number | null = null;
+
+function scheduleRender(markdown: string) {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+  }
+  debounceTimer = window.setTimeout(() => {
+    renderedContent.value = renderMarkdown(markdown);
+    debounceTimer = null;
+  }, 80);
+}
+
+watch(
+  () => props.content,
+  (val) => scheduleRender(val),
+  { immediate: true }
+);
+
 const previewContentRef = ref<HTMLElement | null>(null);
 let renderingInProgress = false;
 
@@ -22,7 +40,7 @@ onMounted(() => {
 });
 
 // Re-render Mermaid diagrams when content changes
-watch(htmlContent, async () => {
+watch(renderedContent, async () => {
   // Prevent race conditions by checking if rendering is already in progress
   if (renderingInProgress) {
     return;
@@ -66,7 +84,7 @@ watch(htmlContent, async () => {
 
 <template>
   <div class="wiki-preview">
-    <div class="preview-content" ref="previewContentRef" v-html="htmlContent"></div>
+    <div class="preview-content" ref="previewContentRef" v-html="renderedContent"></div>
   </div>
 </template>
 
