@@ -346,38 +346,6 @@ DiskScannerState {
 
 ---
 
-## 🏗️ Architecture | 架构文档
-
-For detailed architecture documentation including:
-- 📐 System overview and architecture layers
-- 🎨 Frontend architecture (Vue 3 components & state management)
-- ⚙️ Backend architecture (Rust/Tauri commands & services)
-- 🔄 Data flow and IPC communication patterns
-- 💾 Database schemas and file storage structures
-- 🔐 Security considerations and best practices
-- ⚡ Performance optimizations
-- 🚀 Deployment architecture
-
-**→ See [SOFTWARE_ARCHITECTURE.md](SOFTWARE_ARCHITECTURE.md)**
-
-### Quick Architecture Overview | 架构快览
-
-```
-Application Stack | 应用程序栈
-├─ Presentation: Vue 3 + TypeScript (3 tools: Reminders, Wiki, Disk Scanner)
-├─ Application: 33 Tauri Commands (Rust)
-├─ Domain: Business Logic & Models
-└─ Infrastructure: SQLite + File System + Event Bus
-```
-
-**Key Features**:
-- 🏠 Local-first (本地优先)
-- 🔒 Privacy-focused (隐私保护)
-- 🚀 Native performance (原生性能)
-- 🌍 Cross-platform (跨平台)
-
----
-
 ## 🚀 Quick Start
 
 ### Development
@@ -486,22 +454,104 @@ The built application will be in `src-tauri/target/release/`.
 
 ---
 
----
+## 🏗️ Architecture
 
-## 🏗️ Detailed Architecture
+### 总体分层
+```
+Presentation Layer (Vue3 / notification.html)
+  ├─ 组件：Sidebar / ReminderList / DetailPanel / DebugToggle
+  ├─ 状态：reminders(ref) / filters(computed) / uiState(ref)
+  └─ 基础设施适配：invoke(command) / listen(event)
 
-> **For comprehensive architecture documentation, see [SOFTWARE_ARCHITECTURE.md](SOFTWARE_ARCHITECTURE.md)**
+Application Layer (Rust Commands)
+  ├─ 命令入口：add_reminder / update_reminder / toggle_reminder / snooze_reminder 等
+  ├─ 事务控制：单次命令内保证原子（SQLx 事务或单语句）
+  └─ 事件发布：broadcast_reminders -> app.emit("reminders-updated")
 
-This document contains detailed information about:
-- System layers and component interactions
-- Frontend state management and component tree
-- Backend command structure and services
-- Data storage schemas and file structures
-- IPC communication patterns
-- Security and performance considerations
+Domain Layer (Models + Operations)
+  ├─ 模型：Reminder { id, title, description, time, completed, category, frequency, ... }
+  ├─ 规则：
+  │    - 保存前：时间标准化为 ISO8601
+  │    - Snooze：time += 5 或 10 分钟（策略可扩展）
+  │    - Repeat：根据 frequency 计算下一次触发（预留）
+  └─ 操作：CRUD 函数 (operations.rs)
 
----
+Infrastructure Layer
+  ├─ SQLite 持久化（SQLx + 文件路径按平台放置）
+  ├─ 定时任务：通知检查定时器 (Tokio interval 30s)
+  ├─ 系统托盘：tray::mod 管理菜单/退出
+  └─ 插件：opener (协议安全配置)
+```
 
+### 运行时结构示意
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                          Toolbox (Tauri)                         │
+│                                                                  │
+│  ┌────────────────────┐        Event Bus        ┌──────────────┐ │
+│  │  Main Window (Vue) │◄───────────────────────►│ Notification │ │
+│  │  - 输入/过滤       │        reminders-updated │  Window      │ │
+│  │  - 详情编辑        │                           │  - 到期提醒  │ │
+│  └─────────┬──────────┘                           └─────┬────────┘ │
+│            │ invoke(commands)                            │ invoke  │
+│            ▼                                             ▼         │
+│        ┌───────────────┐  domain + rules  ┌──────────────────────┐ │
+│        │ Application    │────────────────►│   Domain/Operations  │ │
+│        │ (Commands API) │◄────────────────┤ (SQL 构造 + 转换)    │ │
+│        └─────────┬─────┘                 └───────────┬──────────┘ │
+│                  │ DB access (SQLx)                   │           │
+│                  ▼                                    ▼           │
+│             ┌──────────┐                       ┌────────────┐     │
+│             │  SQLite   │◄────────────────────►│  Timer Task │     │
+│             │ reminders │     due scan (30s)    │  (interval) │     │
+│             └──────────┘                       └────────────┘     │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### 核心交互序列 (添加提醒)
+```
+Vue 输入 -> invoke('add_reminder', data)
+  Rust command: 校验/规范化 -> operations::insert(db) -> fetch 全量 -> emit(reminders-updated)
+Vue & Notification: 监听事件 -> 替换本地 reminders 列表 -> UI 响应式刷新
+```
+
+### 核心交互序列 (定时到期提醒弹窗)
+```
+Tokio interval 30s tick
+  -> operations::query_due(db)
+    -> 若存在未完成且到期/过期 -> 若通知窗口未打开则创建 -> emit(reminders-updated)
+通知窗口接收: render 列表
+用户点击完成: invoke('toggle_reminder') -> 更新 + emit -> 若无剩余任务自动关闭
+```
+
+### 事件与状态
+- 单一事件：`reminders-updated` 承载最新完整列表（简化前端同步逻辑）。
+- 扩展建议：将来可增加 `reminder-modified` / `reminder-deleted` 精细化增量更新。
+- Debug 模式：通过 set_debug_mode 切换后端是否输出详细日志（影响命令与定时器输出）。
+
+### 可扩展性设计点
+1. Repeat 规则抽象为策略：`trait RepeatStrategy { fn next(time) -> DateTime }`。
+2. Snooze 参数化：允许前端传入分钟值或预设枚举 (5,10,30)。
+3. 增加搜索索引：在 Infrastructure 层添加 FTS5 虚拟表提升搜索性能。
+4. 多窗口：可再开一个“统计/日历”窗口，同样订阅事件总线。
+5. 数据迁移：引入 schema_version 表 + 迁移脚本数组按版本顺序执行。
+
+### 性能与可靠性
+- 写操作后立即 emit 全量：简单但 O(n) 传输，可在规模增大时改为增量 diff。
+- 定时器查询使用索引 (time, completed) 优化到期扫描。
+- 单窗口 UI 状态保存在内存；重启即重新加载数据库（符合本地优先）。
+
+### 安全
+- 禁用自定义不安全协议；opener 插件使用 `requireLiteralLeadingDot` 防止伪造扩展。
+- 仅暴露必要 Rust 命令；无网络外放接口，减小攻击面。
+- 数据全部本地存储，避免外泄风险。
+
+### 未来演进路径
+- 事件层升级为 多类型 + 增量 payload。
+- 引入缓存层（内存 + 最近查询映射），减少频繁全量读取。
+- 使用后台 Task 调度替代简单 interval，实现动态频率（接近到期频率提升）。
+
+上述架构确保：低复杂度实现快速迭代；通过清晰分层为未来功能（搜索、重复策略、增量同步）预留扩展点。
 ## 🧩 Components
 
 ### Frontend (Vue.js 3 + TypeScript)
