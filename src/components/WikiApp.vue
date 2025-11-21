@@ -21,6 +21,11 @@ const {
   clearCurrentPage,
   listRevisions,
   restoreRevision,
+  sections,
+  loadSections,
+  createSection,
+  updateSection,
+  deleteSection,
 } = useWiki();
 
 const editorTitle = ref('');
@@ -33,6 +38,7 @@ const message = ref('');
 const formError = ref('');
 const searchQuery = ref('');
 const tagFilter = ref('');
+const selectedSectionId = ref<string | null>(null);
 const unsavedChanges = ref(false);
 const revisions = ref<WikiRevisionMeta[]>([]);
 const isHydrating = ref(false);
@@ -46,14 +52,25 @@ const availableTags = computed(() => {
 
 const breadcrumbs = computed(() => {
   const title = editorTitle.value.trim() || 'Untitled';
-  return hasPageSelected.value ? `Home / Wiki / ${title}` : 'Home / Wiki';
+  const sectionName = currentSectionName.value || 'Section';
+  return hasPageSelected.value ? `Home / Wiki / ${sectionName} / ${title}` : `Home / Wiki / ${sectionName}`;
+});
+
+const currentSectionName = computed(() => {
+  if (!selectedSectionId.value) return 'Notebook';
+  const sec = sections.value.find((s) => s.id === selectedSectionId.value);
+  return sec ? sec.name : 'Notebook';
 });
 
 const selectedPageId = computed(() => currentPage.value?.id || '');
 const hasPageSelected = computed(() => Boolean(currentPage.value));
 
 onMounted(async () => {
+  await bootstrapSections();
   await bootstrapPages();
+  if (!selectedSectionId.value && sections.value.length) {
+    selectedSectionId.value = sections.value[0].id;
+  }
 });
 
 watch(pages, (newPages) => {
@@ -97,6 +114,13 @@ async function bootstrapPages() {
   }
 }
 
+async function bootstrapSections() {
+  await loadSections();
+  if (!selectedSectionId.value && sections.value.length) {
+    selectedSectionId.value = sections.value[0].id;
+  }
+}
+
 async function selectPage(id: string) {
   message.value = '';
   formError.value = '';
@@ -120,7 +144,7 @@ async function handleCreatePage() {
   saving.value = true;
   formError.value = '';
   try {
-    const page = await createPage('Untitled Page', '# New Page\n', []);
+    const page = await createPage('Untitled Page', '# New Page\n', [], selectedSectionId.value || undefined);
     await applyFilters();
     await selectPage(page.id);
     message.value = 'Page created';
@@ -137,7 +161,7 @@ async function handleSave() {
   formError.value = '';
   try {
     const title = editorTitle.value.trim() || 'Untitled Page';
-    await updatePage(currentPage.value.id, title, editorContent.value, editorTags.value);
+    await updatePage(currentPage.value.id, title, editorContent.value, editorTags.value, selectedSectionId.value || currentPage.value.section_id || undefined);
     await applyFilters();
     message.value = 'Saved';
     unsavedChanges.value = false;
@@ -204,7 +228,7 @@ async function handleAutosave() {
   formError.value = '';
   try {
     const title = editorTitle.value.trim() || 'Untitled Page';
-    await updatePage(currentPage.value.id, title, editorContent.value, editorTags.value);
+    await updatePage(currentPage.value.id, title, editorContent.value, editorTags.value, selectedSectionId.value || currentPage.value.section_id || undefined);
     unsavedChanges.value = false;
     message.value = 'Autosaved';
     await applyFilters();
@@ -237,6 +261,14 @@ async function applyFilters() {
     base = base.filter((p) => p.tags.includes(tagFilter.value));
   }
 
+  if (selectedSectionId.value) {
+    const target = selectedSectionId.value;
+    base = base.filter((p) => {
+      if (p.section_id) return p.section_id === target;
+      return target === 'root';
+    });
+  }
+
   displayedPages.value = base;
 }
 
@@ -247,12 +279,53 @@ async function handleRestoreRevision(revisionId: string) {
   try {
     const restored = await restoreRevision(currentPage.value.id, revisionId);
     hydrateFromPage(restored);
+    selectedSectionId.value = restored.section_id || selectedSectionId.value;
     await loadRevisionsForPage(restored.id);
     message.value = 'Revision restored';
   } catch (e) {
     formError.value = String(e);
   } finally {
     saving.value = false;
+  }
+}
+
+function handleSelectSection(id: string | null) {
+  selectedSectionId.value = id;
+  void applyFilters();
+}
+
+async function handleAddSection(parentId: string | null) {
+  const name = prompt('New section name', 'New Section') || 'New Section';
+  try {
+    const sec = await createSection(name, parentId || undefined);
+    selectedSectionId.value = sec.id;
+    await applyFilters();
+  } catch (e) {
+    formError.value = String(e);
+  }
+}
+
+async function handleRenameSection(id: string) {
+  const current = sections.value.find((s) => s.id === id)?.name || '';
+  const name = prompt('Rename section', current || 'Section');
+  if (!name) return;
+  try {
+    await updateSection(id, name);
+  } catch (e) {
+    formError.value = String(e);
+  }
+}
+
+async function handleDeleteSection(id: string) {
+  if (!confirm('Delete this section? Child sections/pages must be moved first.')) return;
+  try {
+    await deleteSection(id);
+    if (selectedSectionId.value === id) {
+      selectedSectionId.value = sections.value[0]?.id || null;
+      await applyFilters();
+    }
+  } catch (e) {
+    formError.value = String(e);
   }
 }
 </script>
@@ -287,10 +360,16 @@ async function handleRestoreRevision(revisionId: string) {
           external-search
           :available-tags="availableTags"
           :tag-filter="tagFilter"
+          :sections="sections"
+          :selected-section-id="selectedSectionId"
           @selectPage="selectPage"
           @createPage="handleCreatePage"
           @search="handleSearch"
           @update:tagFilter="handleTagFilterChange"
+          @selectSection="handleSelectSection"
+          @addSection="handleAddSection"
+          @renameSection="handleRenameSection"
+          @deleteSection="handleDeleteSection"
         />
 
         <div class="wiki-editor-panel">

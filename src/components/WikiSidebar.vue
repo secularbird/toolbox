@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import type { WikiPageList } from '../composables/useWikiStore';
+import SectionNode from './SectionNode.vue';
 
 const props = defineProps<{
   pages: WikiPageList[];
@@ -9,6 +10,8 @@ const props = defineProps<{
   externalSearch?: boolean;
   availableTags?: string[];
   tagFilter?: string;
+  sections?: Array<{ id: string; name: string; parent_id?: string | null }>;
+  selectedSectionId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -16,6 +19,10 @@ const emit = defineEmits<{
   createPage: [];
   search: [query: string];
   'update:tagFilter': [tag: string];
+  selectSection: [id: string | null];
+  addSection: [parentId: string | null];
+  renameSection: [id: string];
+  deleteSection: [id: string];
 }>();
 
 const searchQuery = ref('');
@@ -53,6 +60,25 @@ function formatDate(timestamp: number): string {
   
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
+
+function buildTree() {
+  if (!props.sections) return [] as Array<{ id: string; name: string; parent_id?: string | null; children: any[] }>;
+  const map = new Map<string, any>();
+  props.sections.forEach((s) => {
+    map.set(s.id, { ...s, children: [] });
+  });
+  const roots: any[] = [];
+  map.forEach((node) => {
+    if (node.parent_id && map.has(node.parent_id)) {
+      map.get(node.parent_id).children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+  return roots;
+}
+
+const sectionTree = computed(buildTree);
 </script>
 
 <template>
@@ -80,6 +106,25 @@ function formatDate(timestamp: number): string {
         <option value="">All tags</option>
         <option v-for="tag in props.availableTags" :key="tag" :value="tag">#{{ tag }}</option>
       </select>
+    </div>
+
+    <div v-if="sectionTree.length" class="sections-tree">
+      <div class="sections-header">
+        <span>Sections</span>
+        <button class="create-btn ghost" @click="emit('addSection', null)" title="Add section">+</button>
+      </div>
+      <div class="section-list">
+        <SectionNode
+          v-for="node in sectionTree"
+          :key="node.id"
+          :node="node"
+          :current="props.selectedSectionId"
+          @select="emit('selectSection', $event)"
+          @add="emit('addSection', $event)"
+          @rename="emit('renameSection', $event)"
+          @delete="emit('deleteSection', $event)"
+        />
+      </div>
     </div>
 
     <div class="pages-list">
@@ -190,6 +235,26 @@ function formatDate(timestamp: number): string {
   color: var(--text-primary);
   font-size: 13px;
   outline: none;
+}
+
+.sections-tree {
+  padding: 8px 12px 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sections-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .pages-list {

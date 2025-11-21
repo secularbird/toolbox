@@ -56,6 +56,10 @@ pub fn run() {
             wiki_commands::search_wiki_pages,
             wiki_commands::list_wiki_revisions,
             wiki_commands::restore_wiki_revision,
+            wiki_commands::list_sections,
+            wiki_commands::create_section,
+            wiki_commands::update_section,
+            wiki_commands::delete_section,
         ])
         .setup(|app| {
             info!("Setting up application...");
