@@ -1,8 +1,60 @@
 import { marked, type RendererObject } from 'marked';
 import hljs from 'highlight.js';
+import plantumlEncoder from 'plantuml-encoder';
+
+// Generate a unique ID for each diagram using crypto.randomUUID with fallback
+function generateDiagramId(type: string): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `${type}-${crypto.randomUUID()}`;
+  }
+  // Fallback for environments without crypto.randomUUID
+  return `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Efficient HTML escaping function using string replacement
+function escapeHtml(text: string): string {
+  const escapeMap: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return text.replace(/[&<>"']/g, (char) => escapeMap[char]);
+}
 
 const renderer: RendererObject = {
   code({ text, lang }) {
+    // Handle PlantUML diagrams
+    if (lang === 'plantuml') {
+      try {
+        const encoded = plantumlEncoder.encode(text);
+        // Using public PlantUML server - consider self-hosting for privacy
+        const url = `https://www.plantuml.com/plantuml/svg/${encoded}`;
+        const id = generateDiagramId('plantuml');
+        // Use diagram type or first meaningful line as alt text
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('@'));
+        const altText = lines[0] || 'PlantUML Diagram';
+        return `<div class="diagram-container plantuml-container" id="${id}">
+          <img src="${url}" alt="${escapeHtml(altText)}" class="diagram-image" />
+        </div>`;
+      } catch (err) {
+        console.error('PlantUML encoding error:', err);
+        return `<pre class="diagram-error">Error rendering PlantUML diagram</pre>`;
+      }
+    }
+
+    // Handle Mermaid diagrams
+    if (lang === 'mermaid') {
+      const id = generateDiagramId('mermaid');
+      // Use efficient HTML escaping
+      const escapedText = escapeHtml(text);
+      return `<div class="diagram-container mermaid-container" id="${id}">
+        <pre class="mermaid">${escapedText}</pre>
+      </div>`;
+    }
+
+    // Handle regular code blocks with syntax highlighting
     const language = lang && hljs.getLanguage(lang) ? lang : undefined;
     const highlighted = language
       ? hljs.highlight(text, { language }).value
@@ -33,12 +85,15 @@ export function sanitizeHtml(dirty: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(dirty, 'text/html');
 
+  // Allow SVG and diagram-related elements for PlantUML and Mermaid
   const blockedTags = new Set(['script', 'style', 'iframe', 'object', 'embed', 'link']);
 
   const traverse = (node: Element | ChildNode) => {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as Element;
-      if (blockedTags.has(el.tagName.toLowerCase())) {
+      const tagName = el.tagName.toLowerCase();
+      
+      if (blockedTags.has(tagName)) {
         el.remove();
         return;
       }
