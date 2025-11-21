@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, nextTick, onMounted } from 'vue';
+import { computed, watch, nextTick, onMounted, ref } from 'vue';
 import { renderMarkdown } from '../utils/markdown';
 import mermaid from 'mermaid';
 
@@ -8,6 +8,7 @@ const props = defineProps<{
 }>();
 
 const htmlContent = computed(() => renderMarkdown(props.content));
+const previewContentRef = ref<HTMLElement | null>(null);
 
 // Initialize Mermaid with configuration
 onMounted(() => {
@@ -22,16 +23,21 @@ onMounted(() => {
 // Re-render Mermaid diagrams when content changes
 watch(htmlContent, async () => {
   await nextTick();
+  if (!previewContentRef.value) return;
+  
   try {
-    // Find all mermaid elements that haven't been processed
-    const mermaidElements = document.querySelectorAll('.mermaid:not([data-processed])');
-    mermaidElements.forEach((element) => {
-      element.setAttribute('data-processed', 'true');
-    });
+    // Find all mermaid elements within the preview content that haven't been processed
+    const mermaidElements = previewContentRef.value.querySelectorAll('.mermaid:not([data-processed])');
     
     if (mermaidElements.length > 0) {
+      // Mark elements as being processed
+      mermaidElements.forEach((element) => {
+        element.setAttribute('data-processed', 'processing');
+      });
+      
+      // Run Mermaid rendering on unprocessed elements
       await mermaid.run({
-        querySelector: '.mermaid:not([data-processed="rendered"])',
+        querySelector: '.mermaid[data-processed="processing"]',
       });
       
       // Mark as fully rendered
@@ -47,7 +53,7 @@ watch(htmlContent, async () => {
 
 <template>
   <div class="wiki-preview">
-    <div class="preview-content" v-html="htmlContent"></div>
+    <div class="preview-content" ref="previewContentRef" v-html="htmlContent"></div>
   </div>
 </template>
 

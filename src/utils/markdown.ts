@@ -2,8 +2,17 @@ import { marked, type RendererObject } from 'marked';
 import hljs from 'highlight.js';
 import plantumlEncoder from 'plantuml-encoder';
 
-// Generate a unique ID for each diagram
-let diagramCounter = 0;
+// Generate a unique ID for each diagram using crypto.randomUUID
+function generateDiagramId(type: string): string {
+  return `${type}-${crypto.randomUUID()}`;
+}
+
+// Efficient HTML escaping function
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 const renderer: RendererObject = {
   code({ text, lang }) {
@@ -11,10 +20,13 @@ const renderer: RendererObject = {
     if (lang === 'plantuml') {
       try {
         const encoded = plantumlEncoder.encode(text);
+        // Using public PlantUML server - consider self-hosting for privacy
         const url = `https://www.plantuml.com/plantuml/svg/${encoded}`;
-        const id = `plantuml-${diagramCounter++}`;
+        const id = generateDiagramId('plantuml');
+        // Extract first line as alt text if available
+        const altText = text.split('\n').find(line => line.trim() && !line.includes('@startuml')) || 'PlantUML Diagram';
         return `<div class="diagram-container plantuml-container" id="${id}">
-          <img src="${url}" alt="PlantUML Diagram" class="diagram-image" />
+          <img src="${url}" alt="${escapeHtml(altText)}" class="diagram-image" />
         </div>`;
       } catch (err) {
         console.error('PlantUML encoding error:', err);
@@ -24,14 +36,9 @@ const renderer: RendererObject = {
 
     // Handle Mermaid diagrams
     if (lang === 'mermaid') {
-      const id = `mermaid-${diagramCounter++}`;
-      // Escape HTML to prevent injection
-      const escapedText = text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+      const id = generateDiagramId('mermaid');
+      // Use efficient HTML escaping
+      const escapedText = escapeHtml(text);
       return `<div class="diagram-container mermaid-container" id="${id}">
         <pre class="mermaid">${escapedText}</pre>
       </div>`;
