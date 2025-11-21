@@ -25,8 +25,10 @@ function escapeHtml(text: string): string {
 
 const renderer: RendererObject = {
   code({ text, lang }) {
+    const normalizedLang = (lang || '').toLowerCase();
+
     // Handle PlantUML diagrams
-    if (lang === 'plantuml') {
+    if (normalizedLang === 'plantuml') {
       try {
         const encoded = plantumlEncoder.encode(text);
         // Using public PlantUML server - consider self-hosting for privacy
@@ -45,17 +47,13 @@ const renderer: RendererObject = {
     }
 
     // Handle Mermaid diagrams
-    if (lang === 'mermaid') {
-      const id = generateDiagramId('mermaid');
-      // Use efficient HTML escaping
+    if (normalizedLang === 'mermaid' || normalizedLang === 'mermiad') {
       const escapedText = escapeHtml(text);
-      return `<div class="diagram-container mermaid-container" id="${id}">
-        <pre class="mermaid">${escapedText}</pre>
-      </div>`;
+      return `<div class="mermaid">${escapedText}</div>`;
     }
 
     // Handle regular code blocks with syntax highlighting
-    const language = lang && hljs.getLanguage(lang) ? lang : undefined;
+    const language = normalizedLang && hljs.getLanguage(normalizedLang) ? normalizedLang : undefined;
     const highlighted = language
       ? hljs.highlight(text, { language }).value
       : hljs.highlightAuto(text).value;

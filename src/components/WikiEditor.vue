@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import { wrapSelection, insertAtCursor, markdownFormats } from '../utils/markdown';
+import { EditorHistory } from '../utils/editorHistory';
 
 const props = defineProps<{
   modelValue: string;
@@ -14,12 +15,20 @@ const emit = defineEmits<{
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const localValue = ref(props.modelValue);
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const history = new EditorHistory(props.modelValue);
+const isUndoRedoing = ref(false);
 
 watch(() => props.modelValue, (newVal) => {
-  localValue.value = newVal;
+  if (localValue.value !== newVal) {
+    localValue.value = newVal;
+    history.reset(newVal);
+  }
 });
 
 watch(localValue, (newVal) => {
+  if (!isUndoRedoing.value) {
+    history.save(newVal);
+  }
   emit('update:modelValue', newVal);
 });
 
@@ -74,6 +83,28 @@ function handleTab(e: KeyboardEvent) {
   insertText('  ');
 }
 
+function handleUndo() {
+  const prevContent = history.undo();
+  if (prevContent !== null) {
+    isUndoRedoing.value = true;
+    localValue.value = prevContent;
+    setTimeout(() => {
+      isUndoRedoing.value = false;
+    }, 0);
+  }
+}
+
+function handleRedo() {
+  const nextContent = history.redo();
+  if (nextContent !== null) {
+    isUndoRedoing.value = true;
+    localValue.value = nextContent;
+    setTimeout(() => {
+      isUndoRedoing.value = false;
+    }, 0);
+  }
+}
+
 function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Tab') {
     handleTab(e);
@@ -90,6 +121,18 @@ function handleKeydown(e: KeyboardEvent) {
       case 'k':
         e.preventDefault();
         applyFormat('link');
+        break;
+      case 'z':
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+        break;
+      case 'y':
+        e.preventDefault();
+        handleRedo();
         break;
     }
   }
@@ -176,6 +219,23 @@ defineExpose({ applyFormat, insertText });
         />
         <button @click="triggerFilePicker" title="Embed file or image" class="toolbar-btn">📎</button>
       </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <button 
+          @click="handleUndo" 
+          :disabled="!history.canUndo()" 
+          title="Undo (Ctrl+Z)" 
+          class="toolbar-btn"
+        >↶</button>
+        <button 
+          @click="handleRedo" 
+          :disabled="!history.canRedo()" 
+          title="Redo (Ctrl+Shift+Z / Ctrl+Y)" 
+          class="toolbar-btn"
+        >↷</button>
+      </div>
     </div>
 
     <textarea
@@ -236,6 +296,17 @@ defineExpose({ applyFormat, insertText });
 
 .toolbar-btn:active {
   transform: scale(0.95);
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toolbar-btn:disabled:hover {
+  background: var(--btn-bg);
+  border-color: var(--border-color);
+  transform: none;
 }
 
 .toolbar-divider {

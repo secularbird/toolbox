@@ -19,13 +19,18 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Wiki
-    participant Renderer
-    User->>Wiki: Create page
-    Wiki->>Renderer: Parse markdown
-    Renderer->>Wiki: Return HTML
-    Wiki->>User: Display page
+    autonumber
+    actor Customer
+    participant UI as Web UI
+    participant S as OrderService
+    participant DB as Database
+
+    Customer->>UI: Click "View Orders"
+    UI->>S: getOrders(userId)
+    S->>DB: SELECT * FROM orders WHERE userId = ?
+    DB-->>S: orders[]
+    S-->>UI: orders[]
+    UI-->>Customer: Render order list
 ```
 
 ### 3. Class Diagram

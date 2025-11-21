@@ -106,11 +106,279 @@ function clearEditor() {
 
 async function bootstrapPages() {
   await loadPages();
+  
+  if (pages.value.length === 0) {
+    await createSamplePage();
+  }
+  
   await applyFilters();
   if (displayedPages.value.length) {
     await selectPage(displayedPages.value[0].id);
   } else {
     clearEditor();
+  }
+}
+
+async function createSamplePage() {
+  const sampleContent = `# Markdown 功能演示页面
+
+欢迎使用 Wiki！这个页面展示了所有支持的 Markdown 特性。
+
+## 📝 基础文本格式
+
+**粗体文本** 使用 \`**text**\`
+
+*斜体文本* 使用 \`*text*\`
+
+***粗斜体*** 使用 \`***text***\`
+
+\`行内代码\` 使用 \`\`code\`\`
+
+~~删除线~~ 使用 \`~~text~~\`
+
+## 📋 列表
+
+### 无序列表
+- 项目 1
+- 项目 2
+  - 子项目 2.1
+  - 子项目 2.2
+- 项目 3
+
+### 有序列表
+1. 第一项
+2. 第二项
+3. 第三项
+
+## 🔗 链接和图片
+
+[GitHub](https://github.com)
+
+自动链接: https://example.com
+
+![示例图片](https://via.placeholder.com/300x150)
+
+## 💬 引用
+
+> 这是一个引用块
+> 
+> 可以包含多行内容
+
+## 📊 表格
+
+| 功能 | 支持 | 说明 |
+|------|:----:|------|
+| 基础语法 | ✅ | 标题、列表、链接等 |
+| 代码高亮 | ✅ | 支持多种语言 |
+| 图表渲染 | ✅ | Mermaid + PlantUML |
+
+## 💻 代码块
+
+### JavaScript
+\`\`\`javascript
+function greet(name) {
+  console.log(\`Hello, \${name}!\`);
+  return true;
+}
+
+greet("World");
+\`\`\`
+
+### Python
+\`\`\`python
+def factorial(n):
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+print(factorial(5))  # 输出: 120
+\`\`\`
+
+### TypeScript
+\`\`\`typescript
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+const user: User = {
+  id: 1,
+  name: "Alice",
+  email: "alice@example.com"
+};
+\`\`\`
+
+## 📈 Mermaid 图表
+
+### 流程图
+\`\`\`mermaid
+graph TD
+    A[开始] --> B{条件判断}
+    B -->|是| C[执行操作A]
+    B -->|否| D[执行操作B]
+    C --> E[结束]
+    D --> E
+\`\`\`
+
+### 序列图
+\`\`\`mermaid
+sequenceDiagram
+    autonumber
+    participant 用户
+    participant 前端
+    participant 后端
+    participant 数据库
+    
+    用户->>前端: 发起请求
+    前端->>后端: API调用
+    后端->>数据库: 查询数据
+    数据库-->>后端: 返回结果
+    后端-->>前端: 返回数据
+    前端-->>用户: 显示结果
+\`\`\`
+
+### 类图
+\`\`\`mermaid
+classDiagram
+    class Animal {
+        +String name
+        +int age
+        +eat()
+        +sleep()
+    }
+    class Dog {
+        +String breed
+        +bark()
+    }
+    class Cat {
+        +meow()
+    }
+    Animal <|-- Dog
+    Animal <|-- Cat
+\`\`\`
+
+### 饼图
+\`\`\`mermaid
+pie title 项目时间分配
+    "开发" : 45
+    "测试" : 20
+    "文档" : 15
+    "会议" : 20
+\`\`\`
+
+## 🎨 PlantUML 图表
+
+### 用例图
+\`\`\`plantuml
+@startuml
+left to right direction
+actor 用户
+rectangle 系统 {
+  usecase "登录" as UC1
+  usecase "查看数据" as UC2
+  usecase "编辑内容" as UC3
+  usecase "保存更改" as UC4
+}
+用户 --> UC1
+用户 --> UC2
+用户 --> UC3
+用户 --> UC4
+@enduml
+\`\`\`
+
+### 类图
+\`\`\`plantuml
+@startuml
+class WikiPage {
+  +String id
+  +String title
+  +String content
+  +String[] tags
+  +Date created_at
+  +Date updated_at
+  +save()
+  +delete()
+}
+
+class Section {
+  +String id
+  +String name
+  +getPages()
+}
+
+class User {
+  +String name
+  +String email
+  +login()
+}
+
+User "1" -- "*" WikiPage : creates
+Section "1" -- "*" WikiPage : contains
+@enduml
+\`\`\`
+
+### 活动图
+\`\`\`plantuml
+@startuml
+start
+:用户打开编辑器;
+if (有未保存内容?) then (是)
+  :显示提示;
+  if (确认保存?) then (是)
+    :保存内容;
+  else (否)
+    :丢弃更改;
+  endif
+endif
+:加载新页面;
+:显示内容;
+stop
+@enduml
+\`\`\`
+
+## ✨ 特殊功能
+
+### 水平分割线
+
+---
+
+### 转义字符
+
+\\*这不是斜体\\*
+
+\\[这不是链接\\]
+
+### 快捷键
+
+- **粗体**: Ctrl/Cmd + B
+- **斜体**: Ctrl/Cmd + I
+- **链接**: Ctrl/Cmd + K
+- **撤销**: Ctrl/Cmd + Z
+- **重做**: Ctrl/Cmd + Shift + Z 或 Ctrl/Cmd + Y
+
+## 📝 编辑提示
+
+1. 使用工具栏快速插入格式
+2. 支持粘贴图片（自动转换为内嵌格式）
+3. 支持拖拽上传文件（最大5MB）
+4. 自动保存功能
+5. 支持标签和分类管理
+
+---
+
+*试试编辑这个页面，体验所有功能！*
+`;
+
+  try {
+    await createPage(
+      'Markdown 功能演示',
+      sampleContent,
+      ['示例', '教程', 'Markdown'],
+      selectedSectionId.value || undefined
+    );
+  } catch (e) {
+    console.error('Failed to create sample page:', e);
   }
 }
 
@@ -483,6 +751,21 @@ async function handleDeleteSection(id: string) {
 .status-text {
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.topbar-btn.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.topbar-btn.ghost.active {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .wiki-layout {

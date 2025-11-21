@@ -29,19 +29,58 @@ watch(
 const previewContentRef = ref<HTMLElement | null>(null);
 let renderingInProgress = false;
 
+// Detect if dark mode is enabled
+const isDarkMode = () => {
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+};
+
 // Initialize Mermaid with configuration
 onMounted(() => {
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: 'default',
-    securityLevel: 'strict',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
+  const initMermaid = () => {
+    const darkMode = isDarkMode();
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: darkMode ? 'dark' : 'default',
+      securityLevel: 'loose',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      flowchart: {
+        htmlLabels: true,
+        curve: 'basis',
+      },
+      sequence: {
+        diagramMarginX: 50,
+        diagramMarginY: 10,
+        actorMargin: 50,
+        width: 150,
+        height: 65,
+        boxMargin: 10,
+        boxTextMargin: 5,
+        noteMargin: 10,
+        messageMargin: 35,
+      },
+    });
+  };
+  
+  initMermaid();
+  
+  // Re-initialize when color scheme changes
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  mediaQuery.addEventListener('change', () => {
+    initMermaid();
+    // Re-render all diagrams
+    if (previewContentRef.value) {
+      const elements = previewContentRef.value.querySelectorAll('.mermaid[data-processed="rendered"]');
+      elements.forEach(el => {
+        el.removeAttribute('data-processed');
+        el.removeAttribute('id');
+      });
+      renderingInProgress = false;
+    }
   });
 });
 
 // Re-render Mermaid diagrams when content changes
 watch(renderedContent, async () => {
-  // Prevent race conditions by checking if rendering is already in progress
   if (renderingInProgress) {
     return;
   }
@@ -55,27 +94,29 @@ watch(renderedContent, async () => {
   }
   
   try {
-    // Find all mermaid elements within the preview content that haven't been processed
-    const mermaidElements = previewContentRef.value.querySelectorAll('.mermaid:not([data-processed])');
+    const mermaidElements = previewContentRef.value.querySelectorAll('.mermaid:not([data-processed="rendered"])');
     
     if (mermaidElements.length > 0) {
-      // Mark elements as being processed
-      mermaidElements.forEach((element) => {
-        element.setAttribute('data-processed', 'processing');
-      });
-      
-      // Run Mermaid rendering on unprocessed elements
-      await mermaid.run({
-        querySelector: '.mermaid[data-processed="processing"]',
-      });
-      
-      // Mark as fully rendered
-      mermaidElements.forEach((element) => {
-        element.setAttribute('data-processed', 'rendered');
-      });
+      for (const element of Array.from(mermaidElements)) {
+        try {
+          element.setAttribute('data-processed', 'processing');
+          const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          element.id = id;
+          
+          await mermaid.run({
+            nodes: [element],
+          });
+          
+          element.setAttribute('data-processed', 'rendered');
+        } catch (err) {
+          console.error('Mermaid rendering error for element:', err);
+          element.setAttribute('data-processed', 'error');
+          element.innerHTML = `<div class="diagram-error">Mermaid 渲染错误: ${err instanceof Error ? err.message : String(err)}</div>`;
+        }
+      }
     }
   } catch (error) {
-    console.error('Mermaid rendering error:', error);
+    console.error('Mermaid batch rendering error:', error);
   } finally {
     renderingInProgress = false;
   }
@@ -240,9 +281,18 @@ watch(renderedContent, async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: transparent;
-  margin: 0;
-  padding: 0;
+  background: var(--diagram-bg);
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+  min-height: 100px;
+}
+
+.preview-content :deep(.mermaid svg) {
+  max-width: 100%;
+  height: auto;
 }
 
 .preview-content :deep(.diagram-error) {
