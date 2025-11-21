@@ -2,16 +2,25 @@ import { marked, type RendererObject } from 'marked';
 import hljs from 'highlight.js';
 import plantumlEncoder from 'plantuml-encoder';
 
-// Generate a unique ID for each diagram using crypto.randomUUID
+// Generate a unique ID for each diagram using crypto.randomUUID with fallback
 function generateDiagramId(type: string): string {
-  return `${type}-${crypto.randomUUID()}`;
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `${type}-${crypto.randomUUID()}`;
+  }
+  // Fallback for environments without crypto.randomUUID
+  return `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Efficient HTML escaping function
+// Efficient HTML escaping function using string replacement
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  const escapeMap: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return text.replace(/[&<>"']/g, (char) => escapeMap[char]);
 }
 
 const renderer: RendererObject = {
@@ -23,8 +32,9 @@ const renderer: RendererObject = {
         // Using public PlantUML server - consider self-hosting for privacy
         const url = `https://www.plantuml.com/plantuml/svg/${encoded}`;
         const id = generateDiagramId('plantuml');
-        // Extract first line as alt text if available
-        const altText = text.split('\n').find(line => line.trim() && !line.includes('@startuml')) || 'PlantUML Diagram';
+        // Use diagram type or first meaningful line as alt text
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('@'));
+        const altText = lines[0] || 'PlantUML Diagram';
         return `<div class="diagram-container plantuml-container" id="${id}">
           <img src="${url}" alt="${escapeHtml(altText)}" class="diagram-image" />
         </div>`;

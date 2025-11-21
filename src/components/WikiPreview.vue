@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const htmlContent = computed(() => renderMarkdown(props.content));
 const previewContentRef = ref<HTMLElement | null>(null);
+let renderingInProgress = false;
 
 // Initialize Mermaid with configuration
 onMounted(() => {
@@ -22,8 +23,18 @@ onMounted(() => {
 
 // Re-render Mermaid diagrams when content changes
 watch(htmlContent, async () => {
+  // Prevent race conditions by checking if rendering is already in progress
+  if (renderingInProgress) {
+    return;
+  }
+  
+  renderingInProgress = true;
   await nextTick();
-  if (!previewContentRef.value) return;
+  
+  if (!previewContentRef.value) {
+    renderingInProgress = false;
+    return;
+  }
   
   try {
     // Find all mermaid elements within the preview content that haven't been processed
@@ -47,6 +58,8 @@ watch(htmlContent, async () => {
     }
   } catch (error) {
     console.error('Mermaid rendering error:', error);
+  } finally {
+    renderingInProgress = false;
   }
 });
 </script>
