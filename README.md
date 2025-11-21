@@ -1,17 +1,55 @@
-# 📝 Tauri Vue Reminder App
+# 🧰 Toolbox - Multi-Purpose Desktop Application
 
-A beautiful desktop reminder application inspired by macOS Reminders, built with Tauri, Vue.js 3, and Rust with local SQLite storage.
+一个功能强大的多工具桌面应用程序，采用 Tauri 2、Vue.js 3 和 Rust 构建，提供本地优先的隐私保护体验。
+
+A powerful multi-tool desktop application built with Tauri 2, Vue.js 3, and Rust, providing a privacy-focused local-first experience.
+
+## 📑 Table of Contents | 目录
+
+- [Integrated Features | 集成功能](#-集成功能--integrated-features)
+- [Features Overview | 功能概览](#-features-overview)
+- [HMI Design | HMI 设计](#️-hmi-设计--hmi-design)
+- [Architecture | 架构](#️-architecture--架构文档)
+- [Quick Start | 快速开始](#-quick-start)
+- [Usage Guide | 使用指南](#-usage-guide)
+- [Components | 组件](#-components)
+- [Technologies | 技术栈](#️-technologies)
+- [Project Structure | 项目结构](#-project-structure)
+- [Configuration | 配置](#configuration)
+- [Troubleshooting | 故障排除](#troubleshooting)
+- [Roadmap | 路线图](#-roadmap--future-features)
+- [Changelog | 更新日志](#-changelog)
+- [Documentation | 文档](#-documentation)
+- [Contributing | 贡献](#contributing)
+- [License | 许可证](#license)
+
+---
+
+## 📦 集成功能 | Integrated Features
+
+This application combines three powerful tools in one unified interface:
+
+### 📝 Reminders (提醒应用)
+A beautiful task management application inspired by macOS Reminders, with smart lists, custom categories, and real-time synchronization.
+
+### 📚 Wiki (知识管理)
+A personal knowledge management system with markdown support, version control, and full-text search capabilities.
+
+### 💾 Disk Scanner (磁盘扫描器)
+A disk space analyzer that helps you visualize and manage storage usage with an intuitive tree view interface.
 
 ## ✨ Features Overview
 
-### 🎨 UI/UX (macOS Reminders Style)
+### 1️⃣ 📝 Reminders Application
+
+#### 🎨 UI/UX (macOS Reminders Style)
 - **Three-column layout**: Smart Lists | Reminders | Detail Panel
 - **macOS design language**: SF Pro font style, Apple color system, rounded corners
 - **Complete dark mode support**: Auto-follows system preferences
 - **Smooth animations**: Slide-in panels, checkbox animations, hover effects
 - **Empty state designs**: Elegant placeholders with icons
 
-### 📋 Smart Lists
+#### 📋 Smart Lists
 - **📅 Today**: Quick-add reminders for today (auto-sets time to now)
 - **📆 Scheduled**: All reminders with due dates
 - **🚩 Flagged**: Important/starred reminders
@@ -32,7 +70,7 @@ A beautiful desktop reminder application inspired by macOS Reminders, built with
 - **Double-click**: Open detail editing panel
 - **Hover**: Show action buttons (flag, delete)
 
-### 📝 Reminder Properties
+#### 📝 Reminder Properties
 - Title and multi-line notes
 - Due date and time
 - Repeat frequency: Once, Daily, Weekly, Monthly, Yearly
@@ -40,8 +78,9 @@ A beautiful desktop reminder application inspired by macOS Reminders, built with
 - Flag/Star for importance
 - Priority levels (0-3) - ready for future use
 - Tags support - ready for future use
+- **Evidence attachments**: Attach files, images, and documents to reminders
 
-### 🔍 Detail Edit Panel
+#### 🔍 Detail Edit Panel
 **Double-click any reminder to open:**
 - ✓ Toggle completion (large circular checkbox)
 - 📝 Edit title inline
@@ -63,46 +102,148 @@ A beautiful desktop reminder application inspired by macOS Reminders, built with
 - Auto-closes when no tasks remain
 - Real-time sync with main window
 
-### 🔄 Real-time Sync
+#### 🔄 Real-time Sync
 - **Event-driven architecture**: Tauri Event System
 - All windows sync automatically via `reminders-updated` event
 - No external servers or WebSocket needed
 - Instant updates across all views
 
-### 🛠️ Debug Features
+#### 📎 Evidence Management
+- Attach files to reminders (documents, images, etc.)
+- Preview file information and metadata
+- Quick access to attached files
+- Organized storage in app data directory
+
+#### 🛠️ Debug Features
 - Toggle in sidebar (🐛 Debug Logs)
 - Press F12 for DevTools
 - Console logging with prefixes: `[APP]`, `[NOTIFICATION]`
 - Real-time connection status
 - Reminder count display
 
-## 🖥️ HMI 设计
+### 2️⃣ 📚 Wiki Knowledge Management
 
-### 1. 设计目标
+#### ✍️ Markdown Editor
+- Full markdown support with live preview
+- Syntax highlighting
+- Rich text formatting
+- Code block support
+
+#### 📂 Organization
+- Notebooks for categorization
+- Sections for sub-categorization
+- Tags for flexible organization
+- Full-text search across all pages
+
+#### 🕰️ Version Control
+- Automatic revision history
+- Restore previous versions
+- Track changes over time
+- Revision metadata
+
+#### 🔍 Search & Discovery
+- Search by title and content
+- Filter by tags
+- Browse by notebooks and sections
+- Quick navigation
+
+### 3️⃣ 💾 Disk Scanner
+
+#### 📊 Space Analysis
+- Recursive directory scanning
+- Visual size representation with bars
+- Percentage calculations
+- Human-readable sizes (B, KB, MB, GB, TB)
+
+#### 🎯 Performance Features
+- Configurable depth limiting (1-10 levels)
+- Fast native Rust performance
+- Sorted by size (largest first)
+- Lazy folder expansion
+
+#### 🏠 Quick Access
+- Home directory button
+- System roots access
+- Path input with validation
+- Error handling for permissions
+
+## 🖥️ HMI 设计 | HMI Design
+
+### 应用导航 | Application Navigation
+```
+顶部导航栏 | Top Navigation Bar
+├─ 📝 Reminders  (提醒应用)
+├─ 📚 Wiki       (知识管理)
+└─ 💾 Disk Scanner (磁盘扫描器)
+```
+
+### 1. Reminders 设计目标 | Design Goals
 - 提供类 macOS Reminders 的直观三栏体验：列表导航 / 任务列表 / 详情面板。
 - 保持零学习成本：所有核心操作（添加、完成、标记、编辑）≤ 2 步。
 - 统一视觉与交互逻辑：状态一致、反馈及时、暗黑模式无跳色。
 
-### 2. 界面结构（主窗口）
+### 2. Wiki 设计目标 | Wiki Design Goals
+- 专注于内容创作的清爽编辑界面
+- 实时预览，即见即所得的写作体验
+- 灵活的组织结构（笔记本、分区、标签）
+- 强大的搜索和版本控制功能
+
+### 3. Disk Scanner 设计目标 | Disk Scanner Design Goals
+- 直观的可视化空间使用展示
+- 快速定位大文件和文件夹
+- 简洁的交互设计，点击即可展开
+- 性能优先，支持深度限制
+
+### 4. 界面结构（主窗口）| Interface Structure (Main Window)
 ```
-Header(可选预留) ──────────────────────────────
-Sidebar(左)
-  Smart Lists 分组
-  Custom Lists 分组
-  Debug / 设置入口
-
-Content(中)
-  Toolbar: 快速输入框 +（未来：筛选 / 搜索）
-  ReminderList: 滚动区域 + 空状态占位
-
-Detail Panel(右, overlay slide)
-  标题区 + 完成按钮 + Flag
-  属性区：时间 / 重复 / 分类
-  Notes 编辑区
-  操作区：保存 / 删除 / 关闭
+应用主界面 | Main Application Interface
+├── 顶部导航 | Top Navigation
+│   ├─ Reminders Tab
+│   ├─ Wiki Tab  
+│   └─ Disk Scanner Tab
+│
+├── Reminders 视图 | Reminders View
+│   ├── Sidebar(左) | Sidebar (Left)
+│   │   ├─ Smart Lists 分组
+│   │   ├─ Custom Lists 分组
+│   │   └─ Debug / 设置入口
+│   ├── Content(中) | Content (Middle)
+│   │   ├─ Toolbar: 快速输入框
+│   │   └─ ReminderList: 滚动区域
+│   └── Detail Panel(右) | Detail Panel (Right)
+│       ├─ 标题区 + 完成按钮
+│       ├─ 属性区：时间 / 重复 / 分类
+│       ├─ Evidence 附件区
+│       └─ 操作区：保存 / 删除
+│
+├── Wiki 视图 | Wiki View
+│   ├── Sidebar(左) | Sidebar (Left)
+│   │   ├─ 笔记本列表 | Notebooks
+│   │   ├─ 标签过滤 | Tag Filter
+│   │   └─ 页面列表 | Page List
+│   ├── Editor(中) | Editor (Middle)
+│   │   ├─ Markdown 编辑器
+│   │   └─ 工具栏：保存 / 删除
+│   ├── Preview(右) | Preview (Right)
+│   │   └─ 实时预览渲染
+│   └── Metadata Panel
+│       ├─ 标题和标签
+│       ├─ 笔记本和分区
+│       └─ 修订历史
+│
+└── Disk Scanner 视图 | Disk Scanner View
+    ├── 输入区 | Input Area
+    │   ├─ 路径输入框
+    │   ├─ Home / Roots 快速按钮
+    │   └─ 深度限制选项
+    └── 结果区 | Results Area
+        ├─ 总计信息
+        ├─ 文件夹树状展开
+        └─ 大小可视化条
 ```
 
-### 3. 主要交互流程
+### 5. 主要交互流程 | Main Interaction Flows
+#### Reminders 交互流程 | Reminders Interaction Flows
 1. 添加提醒（Today）:
    - 输入框获得焦点 → 用户输入标题 → Enter → 自动补当前时间 → 刷新列表。
 2. 添加提醒（其他列表）:
@@ -112,30 +253,76 @@ Detail Panel(右, overlay slide)
 5. Flag 标记：悬停显示旗帜 → 点击切换 → 列表即时重排（未来可置顶）。
 6. 通知处理：到期窗口显示 → 用户点击完成或 Snooze → 后端更新 → 主窗口同步。
 7. Snooze：前端触发 invoke(snooze_reminder) → 时间后移 N 分钟（默认5，可扩展）。
+8. Evidence 附件：打开详情面板 → 上传文件 → 显示附件列表 → 点击打开或删除。
 
-### 4. 状态模型（前端）
-```
+#### Wiki 交互流程 | Wiki Interaction Flows
+1. 创建页面：点击新建 → 输入标题 → 编辑内容 → 自动保存。
+2. 编辑页面：选择页面 → 左侧编辑 → 右侧实时预览 → 保存。
+3. 搜索：输入搜索词 → 实时筛选页面列表 → 点击查看。
+4. 标签管理：添加标签 → 标签过滤 → 快速定位相关页面。
+5. 版本恢复：查看修订历史 → 选择版本 → 恢复到该版本。
+
+#### Disk Scanner 交互流程 | Disk Scanner Interaction Flows
+1. 扫描目录：输入路径（或点击 Home）→ 设置深度 → 点击 Scan → 查看结果。
+2. 展开文件夹：点击文件夹图标 → 展开子项 → 查看大小分布。
+3. 快速定位：通过大小条直观识别大文件 → 点击路径查看详情。
+
+### 6. 状态模型（前端）| State Models (Frontend)
+```typescript
+// Reminders State
 UIState {
   activeList: string;        // today | scheduled | flagged | all | custom
   editingReminderId?: number;
   showDetailPanel: boolean;
   debugEnabled: boolean;
-  loading: boolean;          // 预留未来异步批量操作
-  filterText: string;        // 预留搜索
+  loading: boolean;
+  filterText: string;
 }
-ReminderItemState (派生): 完成/未完成 | Flagged | 逾期(overdue) | 即将到期(dueSoon)
+
+// Wiki State
+WikiState {
+  pages: WikiPageList[];
+  currentPage: WikiPage | null;
+  searchQuery: string;
+  tagFilter: string;
+  revisions: WikiRevisionMeta[];
+  isLoading: boolean;
+  unsavedChanges: boolean;
+}
+
+// Disk Scanner State
+DiskScannerState {
+  path: string;
+  scanning: boolean;
+  result: DiskItem | null;
+  limitDepth: boolean;
+  maxDepth: number;
+  error: string | null;
+}
 ```
-- 逾期判定：time < now && !completed。
-- 即将到期：time - now ≤ 阈值（预留：15min）。
 
-### 5. 组件职责划分
-- Sidebar: 列表切换 + Debug 入口 + 统计（未来：数量 Badge）。
-- ReminderList: 数据呈现 + 虚拟滚动（未来）+ 交互事件发射。
-- ReminderItem: 最小可交互单元（完成 / Flag / 双击编辑）。
-- DetailPanel: 表单编辑 + 验证 + 提交。
-- NotificationWindow: 到期提醒聚合操作面板。
+### 7. 组件职责划分 | Component Responsibilities
+#### Reminders Components
+- **AppSimple**: 顶层导航和视图切换
+- **RemindersApp**: 主提醒应用容器
+- **Sidebar**: 列表切换 + Debug 入口 + 统计
+- **ReminderList**: 数据呈现 + 虚拟滚动（未来）+ 交互事件
+- **ReminderItem**: 最小可交互单元（完成 / Flag / 双击编辑）
+- **DetailPanel**: 表单编辑 + 验证 + 提交
+- **NotificationWindow**: 到期提醒聚合操作面板
 
-### 6. 输入与验证
+#### Wiki Components
+- **WikiApp**: Wiki 应用主容器
+- **WikiSidebar**: 页面列表、笔记本和标签过滤
+- **WikiEditor**: Markdown 编辑器
+- **WikiPreview**: 实时预览渲染
+- **WikiMetadata**: 元数据编辑（标题、标签、笔记本）
+
+#### Disk Scanner Components
+- **DiskScanner**: 主扫描界面组件
+- **DiskItem**: 递归显示文件/文件夹项
+
+### 8. 输入与验证 | Input & Validation
 - 标题：必填，长度 > 0，< 256；失败给予红色边框 + 抖动动画（预留）。
 - 时间：ISO 字符串；若为空在非 Today 列表可提示“未设置时间”（影响是否进入 Scheduled）。
 - 频率：限定枚举 once|daily|weekly|monthly|yearly。
@@ -177,6 +364,38 @@ ReminderItemState (派生): 完成/未完成 | Flagged | 逾期(overdue) | 即�
 | 大量提醒渲染卡顿 | >1000 条时性能下降 | 引入虚拟列表与分块加载 |
 | 通知窗口频繁闪动 | 多条周期性任务同时到期 | 合并批次 + 合理节流 |
 | Snooze 逻辑混乱 | 用户反复 Snooze 导致时间漂移 | 限制最大次数或显示累计延后信息 |
+
+---
+
+## 🏗️ Architecture | 架构文档
+
+For detailed architecture documentation including:
+- 📐 System overview and architecture layers
+- 🎨 Frontend architecture (Vue 3 components & state management)
+- ⚙️ Backend architecture (Rust/Tauri commands & services)
+- 🔄 Data flow and IPC communication patterns
+- 💾 Database schemas and file storage structures
+- 🔐 Security considerations and best practices
+- ⚡ Performance optimizations
+- 🚀 Deployment architecture
+
+**→ See [SOFTWARE_ARCHITECTURE.md](SOFTWARE_ARCHITECTURE.md)**
+
+### Quick Architecture Overview | 架构快览
+
+```
+Application Stack | 应用程序栈
+├─ Presentation: Vue 3 + TypeScript (3 tools: Reminders, Wiki, Disk Scanner)
+├─ Application: 33 Tauri Commands (Rust)
+├─ Domain: Business Logic & Models
+└─ Infrastructure: SQLite + File System + Event Bus
+```
+
+**Key Features**:
+- 🏠 Local-first (本地优先)
+- 🔒 Privacy-focused (隐私保护)
+- 🚀 Native performance (原生性能)
+- 🌍 Cross-platform (跨平台)
 
 ---
 
@@ -288,104 +507,22 @@ The built application will be in `src-tauri/target/release/`.
 
 ---
 
-## 🏗️ Architecture
+---
 
-### 总体分层
-```
-Presentation Layer (Vue3 / notification.html)
-  ├─ 组件：Sidebar / ReminderList / DetailPanel / DebugToggle
-  ├─ 状态：reminders(ref) / filters(computed) / uiState(ref)
-  └─ 基础设施适配：invoke(command) / listen(event)
+## 🏗️ Detailed Architecture
 
-Application Layer (Rust Commands)
-  ├─ 命令入口：add_reminder / update_reminder / toggle_reminder / snooze_reminder 等
-  ├─ 事务控制：单次命令内保证原子（SQLx 事务或单语句）
-  └─ 事件发布：broadcast_reminders -> app.emit("reminders-updated")
+> **For comprehensive architecture documentation, see [SOFTWARE_ARCHITECTURE.md](SOFTWARE_ARCHITECTURE.md)**
 
-Domain Layer (Models + Operations)
-  ├─ 模型：Reminder { id, title, description, time, completed, category, frequency, ... }
-  ├─ 规则：
-  │    - 保存前：时间标准化为 ISO8601
-  │    - Snooze：time += 5 或 10 分钟（策略可扩展）
-  │    - Repeat：根据 frequency 计算下一次触发（预留）
-  └─ 操作：CRUD 函数 (operations.rs)
+This document contains detailed information about:
+- System layers and component interactions
+- Frontend state management and component tree
+- Backend command structure and services
+- Data storage schemas and file structures
+- IPC communication patterns
+- Security and performance considerations
 
-Infrastructure Layer
-  ├─ SQLite 持久化（SQLx + 文件路径按平台放置）
-  ├─ 定时任务：通知检查定时器 (Tokio interval 30s)
-  ├─ 系统托盘：tray::mod 管理菜单/退出
-  └─ 插件：opener (协议安全配置)
-```
+---
 
-### 运行时结构示意
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                          Toolbox (Tauri)                         │
-│                                                                  │
-│  ┌────────────────────┐        Event Bus        ┌──────────────┐ │
-│  │  Main Window (Vue) │◄───────────────────────►│ Notification │ │
-│  │  - 输入/过滤       │        reminders-updated │  Window      │ │
-│  │  - 详情编辑        │                           │  - 到期提醒  │ │
-│  └─────────┬──────────┘                           └─────┬────────┘ │
-│            │ invoke(commands)                            │ invoke  │
-│            ▼                                             ▼         │
-│        ┌───────────────┐  domain + rules  ┌──────────────────────┐ │
-│        │ Application    │────────────────►│   Domain/Operations  │ │
-│        │ (Commands API) │◄────────────────┤ (SQL 构造 + 转换)    │ │
-│        └─────────┬─────┘                 └───────────┬──────────┘ │
-│                  │ DB access (SQLx)                   │           │
-│                  ▼                                    ▼           │
-│             ┌──────────┐                       ┌────────────┐     │
-│             │  SQLite   │◄────────────────────►│  Timer Task │     │
-│             │ reminders │     due scan (30s)    │  (interval) │     │
-│             └──────────┘                       └────────────┘     │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### 核心交互序列 (添加提醒)
-```
-Vue 输入 -> invoke('add_reminder', data)
-  Rust command: 校验/规范化 -> operations::insert(db) -> fetch 全量 -> emit(reminders-updated)
-Vue & Notification: 监听事件 -> 替换本地 reminders 列表 -> UI 响应式刷新
-```
-
-### 核心交互序列 (定时到期提醒弹窗)
-```
-Tokio interval 30s tick
-  -> operations::query_due(db)
-    -> 若存在未完成且到期/过期 -> 若通知窗口未打开则创建 -> emit(reminders-updated)
-通知窗口接收: render 列表
-用户点击完成: invoke('toggle_reminder') -> 更新 + emit -> 若无剩余任务自动关闭
-```
-
-### 事件与状态
-- 单一事件：`reminders-updated` 承载最新完整列表（简化前端同步逻辑）。
-- 扩展建议：将来可增加 `reminder-modified` / `reminder-deleted` 精细化增量更新。
-- Debug 模式：通过 set_debug_mode 切换后端是否输出详细日志（影响命令与定时器输出）。
-
-### 可扩展性设计点
-1. Repeat 规则抽象为策略：`trait RepeatStrategy { fn next(time) -> DateTime }`。
-2. Snooze 参数化：允许前端传入分钟值或预设枚举 (5,10,30)。
-3. 增加搜索索引：在 Infrastructure 层添加 FTS5 虚拟表提升搜索性能。
-4. 多窗口：可再开一个“统计/日历”窗口，同样订阅事件总线。
-5. 数据迁移：引入 schema_version 表 + 迁移脚本数组按版本顺序执行。
-
-### 性能与可靠性
-- 写操作后立即 emit 全量：简单但 O(n) 传输，可在规模增大时改为增量 diff。
-- 定时器查询使用索引 (time, completed) 优化到期扫描。
-- 单窗口 UI 状态保存在内存；重启即重新加载数据库（符合本地优先）。
-
-### 安全
-- 禁用自定义不安全协议；opener 插件使用 `requireLiteralLeadingDot` 防止伪造扩展。
-- 仅暴露必要 Rust 命令；无网络外放接口，减小攻击面。
-- 数据全部本地存储，避免外泄风险。
-
-### 未来演进路径
-- 事件层升级为 多类型 + 增量 payload。
-- 引入缓存层（内存 + 最近查询映射），减少频繁全量读取。
-- 使用后台 Task 调度替代简单 interval，实现动态频率（接近到期频率提升）。
-
-上述架构确保：低复杂度实现快速迭代；通过清晰分层为未来功能（搜索、重复策略、增量同步）预留扩展点。
 ## 🧩 Components
 
 ### Frontend (Vue.js 3 + TypeScript)
@@ -735,7 +872,26 @@ MIT
 
 ## 📝 Changelog
 
-### v0.2.0 (Current)
+### v0.3.0 (Current) - Multi-Tool Integration
+- ✨ Integrated Wiki knowledge management system
+  - Markdown editor with live preview
+  - Version control and revision history
+  - Full-text search
+  - Notebooks and tags organization
+- ✨ Integrated Disk Scanner tool
+  - Recursive directory scanning
+  - Visual size representation
+  - Depth limiting for performance
+  - Quick access to home and system roots
+- ✨ Added Evidence attachment system for reminders
+  - File attachments support
+  - Preview and metadata
+  - Organized storage
+- 📚 Comprehensive architecture documentation
+- 🎨 Unified navigation with tab interface
+- 🌐 Android platform support
+
+### v0.2.0
 - ✨ Redesigned UI to match macOS Reminders
 - ✨ Added Today list with auto-time feature
 - ✨ Double-click to edit in detail panel
@@ -752,6 +908,14 @@ MIT
 - Notification system
 - System tray integration
 - SQLite storage
+
+## 📚 Documentation
+
+- **[README.md](README.md)** - Main documentation (this file)
+- **[SOFTWARE_ARCHITECTURE.md](SOFTWARE_ARCHITECTURE.md)** - Detailed architecture documentation
+- **[使用说明.md](使用说明.md)** - Chinese usage guide
+- **[DISK_SCANNER_README.md](DISK_SCANNER_README.md)** - Disk Scanner specific documentation
+- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Implementation summary
 
 ## 📧 Support
 
