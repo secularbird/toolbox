@@ -1,22 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import DiskScanner from './components/DiskScanner.vue';
 import RemindersApp from './components/RemindersApp.vue';
 import WikiApp from './components/WikiApp.vue';
 
-const currentView = ref<'reminders' | 'diskscanner' | 'wiki'>('reminders');
+const currentView = ref<'reminders' | 'wiki'>('wiki');
 </script>
 
 <template>
   <div class="app-container">
     <nav class="app-nav">
-      <button 
-        @click="currentView = 'reminders'" 
-        :class="{ active: currentView === 'reminders' }"
-        class="nav-btn"
-      >
-        📝 Reminders
-      </button>
       <button 
         @click="currentView = 'wiki'" 
         :class="{ active: currentView === 'wiki' }"
@@ -25,18 +17,17 @@ const currentView = ref<'reminders' | 'diskscanner' | 'wiki'>('reminders');
         📚 Wiki
       </button>
       <button 
-        @click="currentView = 'diskscanner'" 
-        :class="{ active: currentView === 'diskscanner' }"
+        @click="currentView = 'reminders'" 
+        :class="{ active: currentView === 'reminders' }"
         class="nav-btn"
       >
-        💾 Disk Scanner
+        📝 Reminders
       </button>
     </nav>
 
     <div class="view-container">
-      <RemindersApp v-if="currentView === 'reminders'" />
-      <WikiApp v-else-if="currentView === 'wiki'" />
-      <DiskScanner v-else-if="currentView === 'diskscanner'" />
+      <WikiApp v-if="currentView === 'wiki'" />
+      <RemindersApp v-else-if="currentView === 'reminders'" />
     </div>
   </div>
 </template>

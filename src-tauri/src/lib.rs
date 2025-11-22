@@ -4,7 +4,6 @@ mod commands;
 mod tray;
 mod database;
 mod notifications;
-mod disk_scanner;
 mod evidence_commands;
 mod wiki_commands;
 
@@ -35,10 +34,6 @@ pub fn run() {
             commands::broadcast_reminders,
             notifications::dismiss_notification,
             notifications::snooze_reminder,
-            disk_scanner::scan_directory,
-            disk_scanner::get_home_directory,
-            disk_scanner::get_system_roots,
-            disk_scanner::format_bytes,
             evidence_commands::add_evidence_to_reminder,
             evidence_commands::get_reminder_evidence,
             evidence_commands::get_all_evidence_items,

@@ -1,80 +1,54 @@
-# 📝 Tauri Vue Reminder App
+# 📚 Tauri Wiki & Reminder App
 
-A beautiful desktop reminder application inspired by macOS Reminders, built with Tauri, Vue.js 3, and Rust with local SQLite storage.
+A powerful desktop application with **Wiki as the primary feature**, complemented by a reminder system. Built with Tauri, Vue.js 3, and Rust with local storage.
 
-## ✨ Features Overview
+## ✨ Main Features
 
-### 🎨 UI/UX (macOS Reminders Style)
-- **Three-column layout**: Smart Lists | Reminders | Detail Panel
-- **macOS design language**: SF Pro font style, Apple color system, rounded corners
-- **Complete dark mode support**: Auto-follows system preferences
-- **Smooth animations**: Slide-in panels, checkbox animations, hover effects
-- **Empty state designs**: Elegant placeholders with icons
+### 📚 Wiki System (Primary Feature)
 
-### 📋 Smart Lists
-- **📅 Today**: Quick-add reminders for today (auto-sets time to now)
-- **📆 Scheduled**: All reminders with due dates
-- **🚩 Flagged**: Important/starred reminders
-- **📋 All**: Complete overview of all reminders
+**Markdown Editor with Live Preview**
+- Real-time markdown rendering with syntax highlighting
+- Side-by-side editor and preview
+- Full markdown support with extended syntax
 
-### 📁 User Lists (Custom Categories)
-- 💼 Work
-- 👤 Personal
-- 🛒 Shopping
-- 🏥 Health
-- 📌 Other
-- ➕ Add custom categories dynamically
+**Advanced Features**
+- 📄 **Document Import**: Import Word documents (.docx, .doc) with preview
+- ⊞ **Table Insertion**: Visual table builder with keyboard shortcut (Ctrl+Shift+T)
+- 🖱️ **Context Menu**: Right-click pages for quick actions (Open, Rename, Delete)
+- 📁 **Section Management**: Hierarchical organization like OneNote
+- 🔍 **Search**: Full-text search across pages and tags
+- 🏷️ **Tags**: Flexible categorization with tag filtering
+- 📋 **Version History**: Track changes and restore previous versions
+- 💾 **Auto-save**: Automatic draft saving with unsaved changes indicator
+- 📊 **Mermaid Diagrams**: All diagram types with auto dark mode
+- ↶ **Undo/Redo**: Full history management with keyboard shortcuts
 
-### ⚡ Quick Actions
-- **Fast add**: Type title + Enter in any list
-- **Today list special**: No time picker needed, auto-sets to current time
-- **Single-click**: Toggle completion status
-- **Double-click**: Open detail editing panel
-- **Hover**: Show action buttons (flag, delete)
+**Auto-naming Convention**
+- New sections inherit parent name + date (YYYY-MM-DD)
+- New pages inherit section name + date
+- Imported documents automatically get date stamps
 
-### 📝 Reminder Properties
-- Title and multi-line notes
-- Due date and time
-- Repeat frequency: Once, Daily, Weekly, Monthly, Yearly
-- Category/List assignment
-- Flag/Star for importance
-- Priority levels (0-3) - ready for future use
-- Tags support - ready for future use
+**User Interface**
+- Three-panel layout: Sections | Pages List | Editor + Preview
+- Breadcrumb navigation
+- Metadata panel with timestamps
+- Dark mode support
 
-### 🔍 Detail Edit Panel
-**Double-click any reminder to open:**
-- ✓ Toggle completion (large circular checkbox)
-- 📝 Edit title inline
-- 📄 Add/edit notes (textarea)
-- 📅 Set/change date & time
-- 🔄 Change repeat frequency
-- 📁 Move to different list
-- 🚩 Add/remove flag
-- 💾 Save changes button
-- 🗑️ Delete reminder button
-- ✕ Close panel
+### 📝 Reminders System (Secondary Feature)
 
-### 🔔 Notification System
-- Independent notification window (notification.html)
-- Checks for due reminders every 30 seconds
-- Top-right corner popup display
-- Shows incomplete overdue tasks
-- Quick actions: Complete or Snooze
-- Auto-closes when no tasks remain
-- Real-time sync with main window
+**macOS-Style Interface**
+- Three-column layout: Smart Lists | Reminders | Detail Panel
+- Complete dark mode support
+- Smooth animations and hover effects
 
-### 🔄 Real-time Sync
-- **Event-driven architecture**: Tauri Event System
-- All windows sync automatically via `reminders-updated` event
-- No external servers or WebSocket needed
-- Instant updates across all views
-
-### 🛠️ Debug Features
-- Toggle in sidebar (🐛 Debug Logs)
-- Press F12 for DevTools
-- Console logging with prefixes: `[APP]`, `[NOTIFICATION]`
-- Real-time connection status
-- Reminder count display
+**Core Features**
+- Smart lists: Today, Scheduled, Flagged, All
+- Custom categories: Work, Personal, Shopping, Health, etc.
+- Quick-add with auto-time for Today list
+- Repeat frequency options
+- Priority levels and flags
+- Real-time notifications
+- Evidence attachments
 
 ## 🚀 Quick Start
 

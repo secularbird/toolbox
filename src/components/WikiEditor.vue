@@ -335,6 +335,7 @@ defineExpose({ applyFormat, insertText });
   line-height: 1.6;
   resize: none;
   outline: none;
+  overflow-y: auto;
 }
 
 .editor-textarea::placeholder {

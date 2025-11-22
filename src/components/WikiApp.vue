@@ -1045,6 +1045,7 @@ async function handleImportDocument(result: ImportResult) {
 .preview-pane {
   min-height: 0;
   display: flex;
+  flex-direction: column;
 }
 
 .editor-pane {
