@@ -125,8 +125,8 @@ function formatDate(timestamp: number): string {
     </div>
 
     <div class="metadata-section">
-      <button @click="emit('delete')" class="delete-btn">
-        🗑️ Delete Page
+      <button @click="emit('delete')" class="delete-btn" style="background: #ff4444; color: white; font-weight: bold;">
+        🗑️ Delete Page (DEBUG)
       </button>
     </div>
   </div>

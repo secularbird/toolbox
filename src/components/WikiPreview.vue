@@ -104,7 +104,7 @@ watch(renderedContent, async () => {
           element.id = id;
           
           await mermaid.run({
-            nodes: [element],
+            nodes: [element as HTMLElement],
           });
           
           element.setAttribute('data-processed', 'rendered');

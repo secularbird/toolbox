@@ -4,8 +4,12 @@ import WikiSidebar from './WikiSidebar.vue';
 import WikiEditor from './WikiEditor.vue';
 import WikiPreview from './WikiPreview.vue';
 import WikiMetadata from './WikiMetadata.vue';
+import DocumentImportModal from './DocumentImportModal.vue';
+import TableInsertModal from './TableInsertModal.vue';
 import { useWiki } from '../composables/useWikiStore';
 import type { WikiPage, WikiRevisionMeta, WikiPageList } from '../composables/useWikiStore';
+import type { ImportResult } from '../composables/useDocumentImport';
+import { ask } from '@tauri-apps/plugin-dialog';
 
 const {
   pages,
@@ -42,6 +46,9 @@ const selectedSectionId = ref<string | null>(null);
 const unsavedChanges = ref(false);
 const revisions = ref<WikiRevisionMeta[]>([]);
 const isHydrating = ref(false);
+const showImportModal = ref(false);
+const showTableModal = ref(false);
+const editorRef = ref<InstanceType<typeof WikiEditor> | null>(null);
 let autosaveTimer: number | null = null;
 
 const availableTags = computed(() => {
@@ -412,7 +419,22 @@ async function handleCreatePage() {
   saving.value = true;
   formError.value = '';
   try {
-    const page = await createPage('Untitled Page', '# New Page\n', [], selectedSectionId.value || undefined);
+    // Generate default page title with section name and date
+    let defaultTitle = '';
+    if (selectedSectionId.value) {
+      const section = sections.value.find(s => s.id === selectedSectionId.value);
+      if (section) {
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        defaultTitle = `${section.name} - ${today}`;
+      }
+    }
+    
+    if (!defaultTitle) {
+      const today = new Date().toISOString().split('T')[0];
+      defaultTitle = `Page - ${today}`;
+    }
+    
+    const page = await createPage(defaultTitle, '# New Page\n', [], selectedSectionId.value || undefined);
     await applyFilters();
     await selectPage(page.id);
     message.value = 'Page created';
@@ -447,11 +469,32 @@ async function handleSave() {
 }
 
 async function handleDelete() {
-  if (!currentPage.value) return;
+  if (!currentPage.value) {
+    console.log('[DEBUG] No current page selected');
+    return;
+  }
+  
+  console.log('[DEBUG] Deleting page:', currentPage.value.title, currentPage.value.id);
+  
+  const confirmed = await ask(`确定要删除页面 "${currentPage.value.title}" 吗？`, {
+    title: '删除确认',
+    kind: 'warning',
+    okLabel: '删除',
+    cancelLabel: '取消'
+  });
+  
+  if (!confirmed) {
+    console.log('[DEBUG] Delete cancelled by user');
+    return;
+  }
+  
   saving.value = true;
   formError.value = '';
   try {
+    console.log('[DEBUG] Calling deletePage API...');
     await deletePage(currentPage.value.id);
+    console.log('[DEBUG] Page deleted successfully');
+    
     await applyFilters();
     if (displayedPages.value.length) {
       await selectPage(displayedPages.value[0].id);
@@ -460,10 +503,64 @@ async function handleDelete() {
     }
     message.value = 'Page deleted';
   } catch (e) {
+    console.error('[DEBUG] Delete failed:', e);
     formError.value = String(e);
   } finally {
     saving.value = false;
   }
+}
+
+async function handleDeletePageFromSidebar(pageId: string) {
+  const page = pages.value.find(p => p.id === pageId);
+  if (!page) return;
+  
+  const confirmed = await ask(`确定要删除页面 "${page.title}" 吗？`, {
+    title: '删除确认',
+    kind: 'warning',
+    okLabel: '删除',
+    cancelLabel: '取消'
+  });
+  
+  if (!confirmed) return;
+  
+  saving.value = true;
+  formError.value = '';
+  try {
+    await deletePage(pageId);
+    await applyFilters();
+    
+    // If the deleted page was currently selected, clear the editor
+    if (currentPage.value?.id === pageId) {
+      if (displayedPages.value.length) {
+        await selectPage(displayedPages.value[0].id);
+      } else {
+        clearEditor();
+      }
+    }
+    
+    message.value = 'Page deleted';
+  } catch (e) {
+    formError.value = String(e);
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function handleRenamePageFromSidebar(pageId: string) {
+  const page = pages.value.find(p => p.id === pageId);
+  if (!page) return;
+  
+  // Select the page first
+  await selectPage(pageId);
+  
+  // Focus on the title input so user can rename
+  setTimeout(() => {
+    const titleInput = document.querySelector('.title-input') as HTMLInputElement;
+    if (titleInput) {
+      titleInput.focus();
+      titleInput.select();
+    }
+  }, 100);
 }
 
 async function handleSearch(query: string) {
@@ -563,7 +660,22 @@ function handleSelectSection(id: string | null) {
 }
 
 async function handleAddSection(parentId: string | null) {
-  const name = prompt('New section name', 'New Section') || 'New Section';
+  // Generate default name with parent name and date
+  let defaultName = '';
+  if (parentId) {
+    const parent = sections.value.find(s => s.id === parentId);
+    if (parent) {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      defaultName = `${parent.name} - ${today}`;
+    }
+  }
+  
+  if (!defaultName) {
+    const today = new Date().toISOString().split('T')[0];
+    defaultName = `Section - ${today}`;
+  }
+  
+  const name = prompt('New section name', defaultName) || defaultName;
   try {
     const sec = await createSection(name, parentId || undefined);
     selectedSectionId.value = sec.id;
@@ -585,15 +697,99 @@ async function handleRenameSection(id: string) {
 }
 
 async function handleDeleteSection(id: string) {
-  if (!confirm('Delete this section? Child sections/pages must be moved first.')) return;
+  console.log('[DEBUG] handleDeleteSection called with id:', id);
+  
+  const section = sections.value.find(s => s.id === id);
+  const sectionName = section?.name || 'this section';
+  
+  console.log('[DEBUG] Section to delete:', section);
+  
+  const confirmed = await ask(
+    `确定要删除分类 "${sectionName}" 吗？\n\n注意：该分类下的子分类和页面必须先移动到其他位置。`,
+    {
+      title: '删除分类',
+      kind: 'warning',
+      okLabel: '删除',
+      cancelLabel: '取消'
+    }
+  );
+  
+  if (!confirmed) {
+    console.log('[DEBUG] Delete cancelled by user');
+    return;
+  }
+  
   try {
+    console.log('[DEBUG] Calling deleteSection API...');
     await deleteSection(id);
+    console.log('[DEBUG] Section deleted successfully');
+    
     if (selectedSectionId.value === id) {
       selectedSectionId.value = sections.value[0]?.id || null;
       await applyFilters();
     }
+    message.value = `分类 "${sectionName}" 已删除`;
+  } catch (e) {
+    console.error('[DEBUG] Section delete failed:', e);
+    formError.value = String(e);
+  }
+}
+
+function handleShowImport() {
+  showImportModal.value = true;
+}
+
+function handleShowTableInsert() {
+  showTableModal.value = true;
+}
+
+function handleInsertTable(markdown: string) {
+  showTableModal.value = false;
+  if (editorRef.value) {
+    editorRef.value.insertText('\n\n' + markdown + '\n\n');
+  }
+}
+
+async function handleImportDocument(result: ImportResult) {
+  showImportModal.value = false;
+  saving.value = true;
+  formError.value = '';
+  
+  try {
+    // Add date to imported document title if it doesn't already have one
+    let finalTitle = result.title;
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    // Check if title already contains a date pattern (YYYY-MM-DD)
+    const hasDate = /\d{4}-\d{2}-\d{2}/.test(finalTitle);
+    
+    if (!hasDate) {
+      // Add section name and date if in a section
+      if (selectedSectionId.value) {
+        const section = sections.value.find(s => s.id === selectedSectionId.value);
+        if (section) {
+          finalTitle = `${section.name} - ${today} - ${result.title}`;
+        } else {
+          finalTitle = `${result.title} - ${today}`;
+        }
+      } else {
+        finalTitle = `${result.title} - ${today}`;
+      }
+    }
+    
+    const page = await createPage(
+      finalTitle, 
+      result.content, 
+      ['imported'], 
+      selectedSectionId.value || undefined
+    );
+    await applyFilters();
+    await selectPage(page.id);
+    message.value = 'Document imported successfully';
   } catch (e) {
     formError.value = String(e);
+  } finally {
+    saving.value = false;
   }
 }
 </script>
@@ -606,6 +802,9 @@ async function handleDeleteSection(id: string) {
           <div class="title-chip">📚 Wiki</div>
           <button class="topbar-btn" @click="handleCreatePage" :disabled="saving || isLoading">
             + New Page
+          </button>
+          <button class="topbar-btn" @click="handleShowImport" :disabled="saving || isLoading">
+            📄 Import
           </button>
           <button class="topbar-btn primary" @click="handleSave" :disabled="!hasPageSelected || saving">
             {{ saving ? 'Saving…' : 'Save' }}
@@ -638,6 +837,8 @@ async function handleDeleteSection(id: string) {
           @addSection="handleAddSection"
           @renameSection="handleRenameSection"
           @deleteSection="handleDeleteSection"
+          @deletePage="handleDeletePageFromSidebar"
+          @renamePage="handleRenamePageFromSidebar"
         />
 
         <div class="wiki-editor-panel">
@@ -662,7 +863,11 @@ async function handleDeleteSection(id: string) {
 
           <div v-else class="editor-split">
             <div class="editor-pane">
-              <WikiEditor v-model="editorContent" />
+              <WikiEditor 
+                ref="editorRef" 
+                v-model="editorContent" 
+                @insertTable="handleShowTableInsert"
+              />
             </div>
             <div class="preview-pane">
               <WikiPreview :content="editorContent" />
@@ -682,6 +887,18 @@ async function handleDeleteSection(id: string) {
         />
       </div>
     </div>
+    
+    <DocumentImportModal 
+      v-if="showImportModal"
+      @close="showImportModal = false"
+      @import="handleImportDocument"
+    />
+    
+    <TableInsertModal 
+      v-if="showTableModal"
+      @close="showTableModal = false"
+      @insert="handleInsertTable"
+    />
   </div>
 </template>
 

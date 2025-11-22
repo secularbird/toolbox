@@ -2,6 +2,8 @@
 import { ref, computed, watch } from 'vue';
 import type { WikiPageList } from '../composables/useWikiStore';
 import SectionNode from './SectionNode.vue';
+import ContextMenu from './ContextMenu.vue';
+import type { ContextMenuItem } from './ContextMenu.vue';
 
 const props = defineProps<{
   pages: WikiPageList[];
@@ -23,9 +25,17 @@ const emit = defineEmits<{
   addSection: [parentId: string | null];
   renameSection: [id: string];
   deleteSection: [id: string];
+  deletePage: [id: string];
+  renamePage: [id: string];
 }>();
 
 const searchQuery = ref('');
+const contextMenu = ref<{ show: boolean; x: number; y: number; pageId: string | null }>({
+  show: false,
+  x: 0,
+  y: 0,
+  pageId: null
+});
 
 const filteredPages = computed(() => {
   if (props.externalSearch) {
@@ -60,6 +70,54 @@ function formatDate(timestamp: number): string {
   
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
+
+function handlePageRightClick(event: MouseEvent, pageId: string) {
+  event.preventDefault();
+  event.stopPropagation();
+  
+  contextMenu.value = {
+    show: true,
+    x: event.clientX,
+    y: event.clientY,
+    pageId
+  };
+}
+
+function closeContextMenu() {
+  contextMenu.value.show = false;
+  contextMenu.value.pageId = null;
+}
+
+const contextMenuItems = computed<ContextMenuItem[]>(() => {
+  if (!contextMenu.value.pageId) return [];
+  
+  const page = props.pages.find(p => p.id === contextMenu.value.pageId);
+  if (!page) return [];
+  
+  return [
+    {
+      label: 'Open',
+      icon: '📄',
+      action: () => emit('selectPage', contextMenu.value.pageId!)
+    },
+    {
+      label: 'Rename',
+      icon: '✏️',
+      action: () => emit('renamePage', contextMenu.value.pageId!)
+    },
+    {
+      separator: true,
+      label: '',
+      action: () => {}
+    },
+    {
+      label: 'Delete',
+      icon: '🗑️',
+      danger: true,
+      action: () => emit('deletePage', contextMenu.value.pageId!)
+    }
+  ];
+});
 
 function buildTree() {
   if (!props.sections) return [] as Array<{ id: string; name: string; parent_id?: string | null; children: any[] }>;
@@ -141,6 +199,7 @@ const sectionTree = computed(buildTree);
         class="page-item"
         :class="{ active: page.id === currentPageId }"
         @click="emit('selectPage', page.id)"
+        @contextmenu="handlePageRightClick($event, page.id)"
       >
         <div class="page-title">{{ page.title }}</div>
         <div class="page-meta">
@@ -156,6 +215,14 @@ const sectionTree = computed(buildTree);
         </div>
       </div>
     </div>
+    
+    <ContextMenu
+      v-if="contextMenu.show"
+      :items="contextMenuItems"
+      :x="contextMenu.x"
+      :y="contextMenu.y"
+      @close="closeContextMenu"
+    />
   </div>
 </template>
 

@@ -18,6 +18,9 @@
     "core:menu:allow-insert",
     "core:menu:allow-remove",
     "core:menu:allow-items",
-    "opener:default"
+    "opener:default",
+    "dialog:allow-ask",
+    "dialog:allow-confirm",
+    "dialog:allow-message"
   ]
 }

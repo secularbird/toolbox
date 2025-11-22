@@ -30,6 +30,11 @@ const isActive = computed(() => props.current === props.node.id);
 function toggle() {
   expanded.value = !expanded.value;
 }
+
+function handleDelete() {
+  console.log('[DEBUG SectionNode] Delete button clicked for:', props.node.id, props.node.name);
+  emit('delete', props.node.id);
+}
 </script>
 
 <template>
@@ -45,7 +50,7 @@ function toggle() {
       <div class="actions">
         <button class="ghost" @click="emit('add', node.id)" title="Add subsection">+</button>
         <button class="ghost" @click="emit('rename', node.id)" title="Rename">✎</button>
-        <button class="ghost" @click="emit('delete', node.id)" title="Delete">🗑️</button>
+        <button class="ghost" @click.stop="handleDelete" title="Delete" style="color: red;">🗑️</button>
       </div>
     </div>
     <div v-if="hasChildren && expanded" class="children">

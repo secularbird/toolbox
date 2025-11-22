@@ -313,12 +313,20 @@ pub fn list_wiki_pages(app_handle: tauri::AppHandle) -> Result<Vec<WikiPageList>
 
 #[tauri::command]
 pub fn delete_wiki_page(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
+    println!("[WIKI] Deleting page with id: {}", id);
     let wiki_dir = get_wiki_dir(app_handle)?;
     let file_path = wiki_dir.join(format!("{}.json", id));
     
-    fs::remove_file(file_path)
+    println!("[WIKI] Deleting file: {:?}", file_path);
+    
+    if !file_path.exists() {
+        return Err(format!("Page file not found: {:?}", file_path));
+    }
+    
+    fs::remove_file(&file_path)
         .map_err(|e| format!("Failed to delete page: {}", e))?;
-
+    
+    println!("[WIKI] Page deleted successfully");
     Ok(())
 }
 

@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string];
+  'insertTable': [];
 }>();
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
@@ -122,6 +123,12 @@ function handleKeydown(e: KeyboardEvent) {
         e.preventDefault();
         applyFormat('link');
         break;
+      case 't':
+        if (e.shiftKey) {
+          e.preventDefault();
+          emit('insertTable');
+        }
+        break;
       case 'z':
         e.preventDefault();
         if (e.shiftKey) {
@@ -205,6 +212,7 @@ defineExpose({ applyFormat, insertText });
       <button @click="applyFormat('ul')" title="Bullet List" class="toolbar-btn">•</button>
       <button @click="applyFormat('ol')" title="Numbered List" class="toolbar-btn">1.</button>
       <button @click="applyFormat('codeBlock')" title="Code Block" class="toolbar-btn">{ }</button>
+      <button @click="emit('insertTable')" title="Insert Table (Ctrl+Shift+T)" class="toolbar-btn">⊞</button>
     </div>
 
       <div class="toolbar-divider"></div>
