@@ -361,10 +361,9 @@ async function syncFromGitHub() {
     isSyncing.value = true;
     syncStatus.value = "Fetching from GitHub...";
     const count = await invoke<number>("sync_from_github");
-    syncStatus.value = `✓ Fetched ${count} reminders from GitHub`;
-    await loadReminders(); // Reload reminders
+    syncStatus.value = `✓ Found ${count} reminders in GitHub (validation successful). Note: Import functionality coming soon.`;
     await loadSyncSettings(); // Reload to get updated last_sync time
-    setTimeout(() => syncStatus.value = "", 5000);
+    setTimeout(() => syncStatus.value = "", 8000);
   } catch (error) {
     syncStatus.value = `✗ Fetch failed: ${error}`;
   } finally {
@@ -797,7 +796,7 @@ onMounted(async () => {
               {{ isSyncing ? '⏳ Syncing...' : '⬆️ Sync to GitHub' }}
             </button>
             <button @click="syncFromGitHub" class="btn-sync" :disabled="isSyncing || syncSettings.sync_method !== 'repo_json'">
-              {{ isSyncing ? '⏳ Fetching...' : '⬇️ Sync from GitHub' }}
+              {{ isSyncing ? '⏳ Validating...' : '⬇️ Validate GitHub Data' }}
             </button>
           </div>
           <button @click="saveSyncSettings" class="btn-save-settings">

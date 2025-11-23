@@ -33,7 +33,7 @@ pub async fn test_github_connection(token: &str) -> Result<bool, String> {
     let client = reqwest::Client::new();
     let response = client
         .get("https://api.github.com/user")
-        .header("Authorization", format!("token {}", token))
+        .header("Authorization", format!("Bearer {}", token))
         .header("User-Agent", "Toolbox-App")
         .send()
         .await
@@ -93,7 +93,7 @@ async fn sync_to_gist(reminders: &[Reminder], token: &str) -> Result<String, Str
     let client = reqwest::Client::new();
     let response = client
         .post("https://api.github.com/gists")
-        .header("Authorization", format!("token {}", token))
+        .header("Authorization", format!("Bearer {}", token))
         .header("User-Agent", "Toolbox-App")
         .json(&gist_data)
         .send()
@@ -134,7 +134,7 @@ async fn sync_to_repo_json(
     
     let get_response = client
         .get(&get_url)
-        .header("Authorization", format!("token {}", token))
+        .header("Authorization", format!("Bearer {}", token))
         .header("User-Agent", "Toolbox-App")
         .send()
         .await
@@ -170,7 +170,7 @@ async fn sync_to_repo_json(
     let put_url = format!("https://api.github.com/repos/{}/contents/reminders.json", repo);
     let response = client
         .put(&put_url)
-        .header("Authorization", format!("token {}", token))
+        .header("Authorization", format!("Bearer {}", token))
         .header("User-Agent", "Toolbox-App")
         .json(&update_data)
         .send()
@@ -219,7 +219,7 @@ async fn fetch_from_repo_json(token: &str, repo: &str) -> Result<Vec<Reminder>, 
     
     let response = client
         .get(&url)
-        .header("Authorization", format!("token {}", token))
+        .header("Authorization", format!("Bearer {}", token))
         .header("User-Agent", "Toolbox-App")
         .send()
         .await

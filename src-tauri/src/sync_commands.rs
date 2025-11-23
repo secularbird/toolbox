@@ -103,12 +103,11 @@ pub async fn sync_from_github(
     // Fetch reminders from GitHub
     let github_reminders = sync::fetch_reminders_from_github(&settings).await?;
     
-    // This is a simple implementation that replaces local reminders
-    // A more sophisticated approach would merge or handle conflicts
-    info!("Fetched {} reminders from GitHub", github_reminders.len());
-    
-    // Note: In a real implementation, you'd want to implement proper merging logic
-    // For now, we'll just return the count and let the user decide what to do
+    // NOTE: This currently only fetches and validates the data from GitHub.
+    // It does NOT replace local reminders to prevent accidental data loss.
+    // A future enhancement will add proper merge/conflict resolution logic.
+    // For now, this serves as a validation that the GitHub sync is working.
+    info!("Fetched and validated {} reminders from GitHub", github_reminders.len());
     
     // Update last sync time
     let now = chrono::Utc::now().to_rfc3339();

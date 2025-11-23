@@ -78,17 +78,20 @@ The Toolbox app now supports syncing your reminders with GitHub, providing:
 2. Wait for confirmation message
 3. Your reminders are now backed up on GitHub!
 
-**Sync from GitHub (Download):**
-1. Click "⬇️ Sync from GitHub" button (only for Repository JSON method)
-2. Your local reminders will be updated with data from GitHub
-3. **Warning**: This will download reminders from GitHub (use carefully)
+**Sync from GitHub (Validate):**
+1. Click "⬇️ Validate GitHub Data" button (only for Repository JSON method)
+2. This checks your GitHub repository and validates the backup data
+3. **Note**: Currently this only validates that data exists and is readable
+4. **Coming Soon**: Full import functionality with merge/conflict resolution
 
 ### Auto Sync
 
 1. Enable "Auto Sync" in settings
 2. Set your preferred interval (default: 30 minutes)
-3. The app will automatically sync to GitHub at the specified interval
+3. The app will automatically sync TO GitHub at the specified interval
 4. Check "Last Sync" timestamp to verify
+
+**Important**: Auto-sync currently only uploads to GitHub (one-way backup)
 
 ## Security Considerations
 
@@ -134,7 +137,7 @@ The Toolbox app now supports syncing your reminders with GitHub, providing:
 2. Ensure the repository exists and you have write access
 3. Try syncing again after a few minutes
 
-### "Fetch failed" Error
+### "Validation failed" Error
 
 **Possible causes:**
 - No reminders.json file exists in the repository
@@ -169,13 +172,13 @@ You can manually edit this file on GitHub if needed, but be careful to maintain 
 ## FAQ
 
 **Q: Can I sync to multiple devices?**
-A: Yes! Use the Repository JSON method and sync from GitHub on each device.
+A: For backup: Yes! Use GitHub sync to backup from multiple devices. For true multi-device sync: Coming soon with import/merge functionality.
 
-**Q: Will sync delete my local reminders?**
-A: Sync to GitHub (⬆️) uploads your local data. Sync from GitHub (⬇️) downloads from GitHub. The current implementation doesn't merge data, so use with caution.
+**Q: Will validation/import delete my local reminders?**
+A: No. Currently, the "Validate GitHub Data" feature only checks that your backup exists and is readable. It does NOT modify local data. Full import with merge functionality is a planned enhancement.
 
 **Q: How often should I sync?**
-A: It depends on your usage. Auto-sync every 30 minutes is a good default. For peace of mind, you can sync manually after important changes.
+A: It depends on your usage. Auto-sync every 30 minutes is a good default for backups. Sync manually after important changes for peace of mind.
 
 **Q: Can I use this with GitHub Enterprise?**
 A: Not currently. The feature is designed for github.com only.
