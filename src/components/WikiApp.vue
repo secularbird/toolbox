@@ -6,6 +6,7 @@ import WikiPreview from './WikiPreview.vue';
 import WikiMetadata from './WikiMetadata.vue';
 import DocumentImportModal from './DocumentImportModal.vue';
 import TableInsertModal from './TableInsertModal.vue';
+import ReminderInsertModal from './ReminderInsertModal.vue';
 import { useWiki } from '../composables/useWikiStore';
 import type { WikiPage, WikiRevisionMeta, WikiPageList } from '../composables/useWikiStore';
 import type { ImportResult } from '../composables/useDocumentImport';
@@ -48,6 +49,7 @@ const revisions = ref<WikiRevisionMeta[]>([]);
 const isHydrating = ref(false);
 const showImportModal = ref(false);
 const showTableModal = ref(false);
+const showReminderModal = ref(false);
 const editorRef = ref<InstanceType<typeof WikiEditor> | null>(null);
 let autosaveTimer: number | null = null;
 
@@ -750,6 +752,18 @@ function handleInsertTable(markdown: string) {
   }
 }
 
+function handleShowReminderInsert() {
+  showReminderModal.value = true;
+}
+
+function handleInsertReminder(markdown: string, reminderId: number) {
+  console.log('[WIKI APP] Reminder created with ID:', reminderId);
+  showReminderModal.value = false;
+  if (editorRef.value) {
+    editorRef.value.insertText('\n\n' + markdown + '\n\n');
+  }
+}
+
 async function handleImportDocument(result: ImportResult) {
   showImportModal.value = false;
   saving.value = true;
@@ -867,6 +881,7 @@ async function handleImportDocument(result: ImportResult) {
                 ref="editorRef" 
                 v-model="editorContent" 
                 @insertTable="handleShowTableInsert"
+                @insertReminder="handleShowReminderInsert"
               />
             </div>
             <div class="preview-pane">
@@ -898,6 +913,12 @@ async function handleImportDocument(result: ImportResult) {
       v-if="showTableModal"
       @close="showTableModal = false"
       @insert="handleInsertTable"
+    />
+    
+    <ReminderInsertModal 
+      v-if="showReminderModal"
+      @close="showReminderModal = false"
+      @insert="handleInsertReminder"
     />
   </div>
 </template>

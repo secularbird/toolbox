@@ -12,10 +12,10 @@ pub async fn add_reminder(
     frequency: String,
     pool: tauri::State<'_, SqlitePool>,
     app: AppHandle,
-) -> Result<(), String> {
+) -> Result<i64, String> {
     info!("Adding reminder: title='{}', category='{}', time='{}', frequency='{}'", title, category, time, frequency);
     
-    crate::database::add_reminder(&pool, &title, &description, &time, &category, &frequency)
+    let reminder_id = crate::database::add_reminder(&pool, &title, &description, &time, &category, &frequency)
         .await
         .map_err(|e| {
             warn!("Failed to add reminder: {}", e);
@@ -29,7 +29,7 @@ pub async fn add_reminder(
     let _ = app.emit("reminders-updated", &reminders);
     info!("Broadcasted reminders-updated event to all windows");
     
-    Ok(())
+    Ok(reminder_id)
 }
 
 #[tauri::command]
