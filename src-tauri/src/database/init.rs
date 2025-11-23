@@ -90,6 +90,37 @@ async fn create_tables(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     .execute(pool)
     .await?;
     
+    // Create sync_settings table
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS sync_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            sync_enabled INTEGER NOT NULL DEFAULT 0,
+            data_source TEXT NOT NULL DEFAULT 'local',
+            github_token TEXT,
+            github_repo TEXT,
+            sync_method TEXT DEFAULT 'gist',
+            last_sync TEXT,
+            auto_sync INTEGER NOT NULL DEFAULT 0,
+            sync_interval_minutes INTEGER NOT NULL DEFAULT 30,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        "#
+    )
+    .execute(pool)
+    .await?;
+    
+    // Insert default settings if not exists
+    sqlx::query(
+        r#"
+        INSERT OR IGNORE INTO sync_settings (id, sync_enabled, data_source, auto_sync, sync_interval_minutes)
+        VALUES (1, 0, 'local', 0, 30)
+        "#
+    )
+    .execute(pool)
+    .await?;
+    
     info!("Database tables created successfully");
     Ok(())
 }

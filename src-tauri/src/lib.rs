@@ -6,6 +6,8 @@ mod database;
 mod notifications;
 mod evidence_commands;
 mod wiki_commands;
+mod sync;
+mod sync_commands;
 
 use log::{info, error};
 use tauri::Manager;
@@ -56,6 +58,11 @@ pub fn run() {
             wiki_commands::create_section,
             wiki_commands::update_section,
             wiki_commands::delete_section,
+            sync_commands::get_sync_settings,
+            sync_commands::save_sync_settings,
+            sync_commands::test_github_connection,
+            sync_commands::sync_to_github,
+            sync_commands::sync_from_github,
         ])
         .setup(|app| {
             info!("Setting up application...");

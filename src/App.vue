@@ -23,6 +23,18 @@ interface Category {
   color: string;
 }
 
+interface SyncSettings {
+  id: number;
+  sync_enabled: boolean;
+  data_source: string;
+  github_token?: string | null;
+  github_repo?: string | null;
+  sync_method?: string | null;
+  last_sync?: string | null;
+  auto_sync: boolean;
+  sync_interval_minutes: number;
+}
+
 // Smart Lists (like macOS Reminders)
 const smartLists = ref<Category[]>([
   { id: "today", name: "Today", icon: "📅", color: "#007aff" },
@@ -63,6 +75,22 @@ const debugMode = ref(true);
 const showDetails = ref(false);
 const selectedReminder = ref<Reminder | null>(null);
 const editingReminder = ref<Partial<Reminder>>({});
+
+// Sync settings
+const showSyncSettings = ref(false);
+const syncSettings = ref<SyncSettings>({
+  id: 1,
+  sync_enabled: false,
+  data_source: "local",
+  github_token: null,
+  github_repo: null,
+  sync_method: "gist",
+  last_sync: null,
+  auto_sync: false,
+  sync_interval_minutes: 30,
+});
+const syncStatus = ref("");
+const isSyncing = ref(false);
 
 const filteredReminders = computed(() => {
   const now = new Date();
@@ -263,6 +291,98 @@ async function toggleDebugMode() {
   }
 }
 
+async function loadSyncSettings() {
+  try {
+    const settings = await invoke<SyncSettings>("get_sync_settings");
+    syncSettings.value = settings;
+    console.log("Sync settings loaded:", settings);
+  } catch (error) {
+    console.error("Failed to load sync settings:", error);
+  }
+}
+
+async function saveSyncSettings() {
+  try {
+    await invoke("save_sync_settings", { settings: syncSettings.value });
+    syncStatus.value = "Settings saved successfully!";
+    setTimeout(() => syncStatus.value = "", 3000);
+  } catch (error) {
+    syncStatus.value = `Error: ${error}`;
+  }
+}
+
+async function testGitHubConnection() {
+  if (!syncSettings.value.github_token) {
+    syncStatus.value = "Please enter a GitHub token";
+    return;
+  }
+  
+  try {
+    syncStatus.value = "Testing connection...";
+    const result = await invoke<boolean>("test_github_connection", { 
+      token: syncSettings.value.github_token 
+    });
+    if (result) {
+      syncStatus.value = "✓ Connection successful!";
+      setTimeout(() => syncStatus.value = "", 3000);
+    }
+  } catch (error) {
+    syncStatus.value = `✗ Connection failed: ${error}`;
+  }
+}
+
+async function syncToGitHub() {
+  if (!syncSettings.value.sync_enabled) {
+    syncStatus.value = "Please enable sync first";
+    return;
+  }
+  
+  try {
+    isSyncing.value = true;
+    syncStatus.value = "Syncing to GitHub...";
+    const result = await invoke<string>("sync_to_github");
+    syncStatus.value = `✓ Synced successfully! URL: ${result}`;
+    await loadSyncSettings(); // Reload to get updated last_sync time
+    setTimeout(() => syncStatus.value = "", 5000);
+  } catch (error) {
+    syncStatus.value = `✗ Sync failed: ${error}`;
+  } finally {
+    isSyncing.value = false;
+  }
+}
+
+async function syncFromGitHub() {
+  if (!syncSettings.value.sync_enabled) {
+    syncStatus.value = "Please enable sync first";
+    return;
+  }
+  
+  try {
+    isSyncing.value = true;
+    syncStatus.value = "Fetching from GitHub...";
+    const count = await invoke<number>("sync_from_github");
+    syncStatus.value = `✓ Found ${count} reminders in GitHub (validation successful). Note: Import functionality coming soon.`;
+    await loadSyncSettings(); // Reload to get updated last_sync time
+    setTimeout(() => syncStatus.value = "", 8000);
+  } catch (error) {
+    syncStatus.value = `✗ Fetch failed: ${error}`;
+  } finally {
+    isSyncing.value = false;
+  }
+}
+
+function formatLastSync(lastSync: string | null | undefined): string {
+  if (!lastSync) return "Never";
+  try {
+    const date = new Date(lastSync);
+    return date.toLocaleString();
+  } catch {
+    return "Invalid date";
+  }
+}
+  }
+}
+
 async function loadDebugMode() {
   try {
     debugMode.value = await invoke("get_debug_mode");
@@ -274,6 +394,7 @@ async function loadDebugMode() {
 onMounted(async () => {
   loadReminders();
   loadDebugMode();
+  loadSyncSettings();
   
   // Listen for real-time reminder updates from any window
   await listen<Reminder[]>('reminders-updated', (event) => {
@@ -371,6 +492,13 @@ onMounted(async () => {
             <small>Real-time sync: Active ✓</small>
           </div>
         </div>
+      </div>
+
+      <!-- Sync Settings Button -->
+      <div class="sync-button-section">
+        <button @click="showSyncSettings = true" class="btn-sync-settings">
+          <span>⚙️ Sync Settings</span>
+        </button>
       </div>
     </aside>
 
@@ -569,6 +697,117 @@ onMounted(async () => {
         </div>
       </div>
     </aside>
+
+    <!-- Sync Settings Modal -->
+    <div v-if="showSyncSettings" class="modal-overlay" @click="showSyncSettings = false">
+      <div class="modal-content sync-settings-modal" @click.stop>
+        <div class="modal-header">
+          <h2>⚙️ Sync Settings</h2>
+          <button @click="showSyncSettings = false" class="btn-close">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="settings-section">
+            <label class="settings-toggle">
+              <input 
+                type="checkbox" 
+                v-model="syncSettings.sync_enabled"
+                @change="saveSyncSettings"
+              />
+              <span class="settings-label">Enable Sync</span>
+            </label>
+            <p class="settings-help">Sync your reminders with GitHub</p>
+          </div>
+
+          <div class="settings-section" v-if="syncSettings.sync_enabled">
+            <label class="settings-label-text">Data Source</label>
+            <select v-model="syncSettings.data_source" class="settings-select">
+              <option value="local">Local Only</option>
+              <option value="github">GitHub</option>
+            </select>
+          </div>
+
+          <div v-if="syncSettings.sync_enabled && syncSettings.data_source === 'github'">
+            <div class="settings-section">
+              <label class="settings-label-text">Sync Method</label>
+              <select v-model="syncSettings.sync_method" class="settings-select">
+                <option value="gist">GitHub Gist (Private)</option>
+                <option value="repo_json">Repository JSON File</option>
+              </select>
+              <p class="settings-help">
+                <span v-if="syncSettings.sync_method === 'gist'">Creates a private gist for your reminders</span>
+                <span v-else>Stores reminders as JSON in a repository</span>
+              </p>
+            </div>
+
+            <div class="settings-section">
+              <label class="settings-label-text">GitHub Token</label>
+              <input 
+                type="password"
+                v-model="syncSettings.github_token"
+                class="settings-input"
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxxx"
+              />
+              <p class="settings-help">
+                Generate at: <a href="https://github.com/settings/tokens/new?scopes=repo,gist" target="_blank">GitHub Settings</a>
+                <br/>Required scopes: <code>repo</code>, <code>gist</code>
+              </p>
+              <button @click="testGitHubConnection" class="btn-test-connection">
+                Test Connection
+              </button>
+            </div>
+
+            <div class="settings-section" v-if="syncSettings.sync_method === 'repo_json'">
+              <label class="settings-label-text">Repository</label>
+              <input 
+                type="text"
+                v-model="syncSettings.github_repo"
+                class="settings-input"
+                placeholder="username/repository"
+              />
+              <p class="settings-help">Format: owner/repo (e.g., "john/my-reminders")</p>
+            </div>
+
+            <div class="settings-section">
+              <label class="settings-toggle">
+                <input 
+                  type="checkbox" 
+                  v-model="syncSettings.auto_sync"
+                />
+                <span class="settings-label">Auto Sync</span>
+              </label>
+              <p class="settings-help">Automatically sync every {{ syncSettings.sync_interval_minutes }} minutes</p>
+            </div>
+
+            <div class="settings-section" v-if="syncSettings.last_sync">
+              <label class="settings-label-text">Last Sync</label>
+              <p class="last-sync-time">{{ formatLastSync(syncSettings.last_sync) }}</p>
+            </div>
+          </div>
+
+          <div v-if="syncStatus" class="sync-status" :class="{ error: syncStatus.includes('✗') }">
+            {{ syncStatus }}
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <div class="sync-actions" v-if="syncSettings.sync_enabled && syncSettings.data_source === 'github'">
+            <button @click="syncToGitHub" class="btn-sync" :disabled="isSyncing">
+              {{ isSyncing ? '⏳ Syncing...' : '⬆️ Sync to GitHub' }}
+            </button>
+            <button @click="syncFromGitHub" class="btn-sync" :disabled="isSyncing || syncSettings.sync_method !== 'repo_json'">
+              {{ isSyncing ? '⏳ Validating...' : '⬇️ Validate GitHub Data' }}
+            </button>
+          </div>
+          <button @click="saveSyncSettings" class="btn-save-settings">
+            Save Settings
+          </button>
+          <button @click="showSyncSettings = false" class="btn-cancel-settings">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1574,6 +1813,330 @@ select {
   .btn-delete-detail:hover {
     background: #ff453a;
     color: white;
+  }
+}
+
+/* Sync Settings Button */
+.sync-button-section {
+  padding: 0.5rem;
+  margin-top: auto;
+  border-top: 1px solid #d1d1d6;
+}
+
+.btn-sync-settings {
+  width: 100%;
+  padding: 0.6rem;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-sync-settings:hover {
+  background: #0066cc;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e5ea;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e5ea;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.settings-section {
+  margin-bottom: 1.5rem;
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.settings-toggle input[type="checkbox"] {
+  margin-right: 0.5rem;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.settings-label {
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #1d1d1f;
+}
+
+.settings-label-text {
+  display: block;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #1d1d1f;
+  margin-bottom: 0.5rem;
+}
+
+.settings-help {
+  font-size: 0.8rem;
+  color: #86868b;
+  margin: 0.5rem 0 0 0;
+}
+
+.settings-help a {
+  color: #007aff;
+  text-decoration: none;
+}
+
+.settings-help a:hover {
+  text-decoration: underline;
+}
+
+.settings-help code {
+  background: #f5f5f7;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+.settings-select,
+.settings-input {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #d1d1d6;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.settings-select:focus,
+.settings-input:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.btn-test-connection {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f5f5f7;
+  border: 1px solid #d1d1d6;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-test-connection:hover {
+  background: #e5e5ea;
+}
+
+.last-sync-time {
+  font-size: 0.9rem;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.sync-status {
+  padding: 0.75rem;
+  background: #d1f4dd;
+  color: #1e4d2b;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-top: 1rem;
+}
+
+.sync-status.error {
+  background: #fdd;
+  color: #c00;
+}
+
+.sync-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.btn-sync {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-sync:hover:not(:disabled) {
+  background: #0066cc;
+}
+
+.btn-sync:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-save-settings {
+  padding: 0.6rem 1.2rem;
+  background: #34c759;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-save-settings:hover {
+  background: #2fb54d;
+}
+
+.btn-cancel-settings {
+  padding: 0.6rem 1.2rem;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  border: 1px solid #d1d1d6;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-settings:hover {
+  background: #e5e5ea;
+}
+
+/* Dark mode for sync settings */
+@media (prefers-color-scheme: dark) {
+  .modal-content {
+    background: #1c1c1e;
+  }
+
+  .modal-header {
+    border-bottom-color: #38383a;
+  }
+
+  .modal-header h2 {
+    color: #f5f5f7;
+  }
+
+  .modal-footer {
+    border-top-color: #38383a;
+  }
+
+  .settings-label,
+  .settings-label-text,
+  .last-sync-time {
+    color: #f5f5f7;
+  }
+
+  .settings-help {
+    color: #98989d;
+  }
+
+  .settings-help code {
+    background: #2c2c2e;
+  }
+
+  .settings-select,
+  .settings-input {
+    background: #2c2c2e;
+    border-color: #48484a;
+    color: #f5f5f7;
+  }
+
+  .btn-test-connection {
+    background: #2c2c2e;
+    border-color: #48484a;
+    color: #f5f5f7;
+  }
+
+  .btn-test-connection:hover {
+    background: #3a3a3c;
+  }
+
+  .sync-status {
+    background: #1e3a28;
+    color: #4cd964;
+  }
+
+  .sync-status.error {
+    background: #3a1f1f;
+    color: #ff453a;
+  }
+
+  .btn-cancel-settings {
+    background: #2c2c2e;
+    border-color: #48484a;
+    color: #f5f5f7;
+  }
+
+  .btn-cancel-settings:hover {
+    background: #3a3a3c;
+  }
+
+  .sync-button-section {
+    border-top-color: #38383a;
+  }
+
+  .btn-sync-settings {
+    background: #0a84ff;
+  }
+
+  .btn-sync-settings:hover {
+    background: #0066cc;
   }
 }
 

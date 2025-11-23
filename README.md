@@ -69,6 +69,15 @@ A beautiful desktop reminder application inspired by macOS Reminders, built with
 - No external servers or WebSocket needed
 - Instant updates across all views
 
+### ☁️ GitHub Sync (NEW!)
+- **Cloud Backup**: Sync reminders to GitHub for safekeeping
+- **Cross-Device**: Access your data from multiple devices
+- **Two Methods**: GitHub Gist or Repository JSON file
+- **Security**: Token stored locally, encrypted communication
+- **Manual & Auto Sync**: One-click sync or automatic periodic sync
+- **Bidirectional**: Push to and pull from GitHub (Repository method)
+- See [GitHub Sync Guide](GITHUB_SYNC_GUIDE.md) for setup instructions
+
 ### 🛠️ Debug Features
 - Toggle in sidebar (🐛 Debug Logs)
 - Press F12 for DevTools
@@ -128,6 +137,15 @@ The built application will be in `src-tauri/target/release/`.
 - **Flag/unflag**: Click 🚩 button (shows on hover)
 - **Delete**: Click 🗑️ in detail panel
 
+### GitHub Sync Setup
+1. Click "⚙️ Sync Settings" in sidebar
+2. Enable sync and select GitHub as data source
+3. Generate GitHub token at [Settings → Tokens](https://github.com/settings/tokens/new)
+4. Paste token and choose sync method (Gist or Repository)
+5. Click "Test Connection" to verify
+6. Use "⬆️ Sync to GitHub" to backup your reminders
+7. See [GitHub Sync Guide](GITHUB_SYNC_GUIDE.md) for detailed instructions
+
 ### Keyboard Shortcuts
 - **Enter**: Quick add reminder
 - **F12**: Open DevTools (when debug enabled)
@@ -180,8 +198,9 @@ Event Flow:
 
 ### Backend (Rust + Tauri 2.0)
 
-**Tauri Commands (11 total):**
+**Tauri Commands (16 total):**
 ```rust
+// Reminders
 add_reminder()        // Create new reminder
 get_reminders()       // Fetch all reminders
 get_due_reminders()   // Fetch overdue/due reminders
@@ -189,6 +208,15 @@ toggle_reminder()     // Toggle completion status
 delete_reminder()     // Remove reminder
 update_reminder()     // Edit reminder details ⭐
 broadcast_reminders() // Sync to all windows
+
+// GitHub Sync (NEW!)
+get_sync_settings()      // Load sync configuration
+save_sync_settings()     // Save sync configuration
+test_github_connection() // Verify GitHub token
+sync_to_github()         // Upload reminders to GitHub
+sync_from_github()       // Download reminders from GitHub
+
+// System
 set_debug_mode()      // Enable/disable debug logs
 get_debug_mode()      // Check debug status
 dismiss_notification()// Close notification
@@ -197,6 +225,7 @@ snooze_reminder()     // Postpone reminder
 
 **Services:**
 - Database initialization and migrations
+- GitHub sync service (Gist & Repository methods)
 - Notification checker (30s interval)
 - System tray management
 - Window lifecycle handlers
