@@ -414,6 +414,9 @@ onMounted(async () => {
     <aside class="sidebar">
       <div class="sidebar-header">
         <h2>📝 Reminders</h2>
+        <button @click="showSyncSettings = true" class="btn-header-settings" title="Settings">
+          ⚙️
+        </button>
       </div>
       
       <!-- Smart Lists -->
@@ -830,6 +833,9 @@ onMounted(async () => {
 
 .sidebar-header {
   padding: 1.2rem 1rem 0.8rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .sidebar-header h2 {
@@ -837,6 +843,26 @@ onMounted(async () => {
   font-size: 1.4rem;
   color: #1d1d1f;
   font-weight: 700;
+}
+
+.btn-header-settings {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #86868b;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-header-settings:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #007aff;
 }
 
 .categories {
@@ -1601,6 +1627,15 @@ select {
 
   .sidebar-header h2 {
     color: #f5f5f7;
+  }
+
+  .btn-header-settings {
+    color: #98989d;
+  }
+
+  .btn-header-settings:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #0a84ff;
   }
 
   .category-item {

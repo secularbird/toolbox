@@ -7,6 +7,7 @@ import WikiMetadata from './WikiMetadata.vue';
 import DocumentImportModal from './DocumentImportModal.vue';
 import TableInsertModal from './TableInsertModal.vue';
 import ReminderInsertModal from './ReminderInsertModal.vue';
+import RemindersApp from './RemindersApp.vue';
 import { useWiki } from '../composables/useWikiStore';
 import type { WikiPage, WikiRevisionMeta, WikiPageList } from '../composables/useWikiStore';
 import type { ImportResult } from '../composables/useDocumentImport';
@@ -50,6 +51,7 @@ const isHydrating = ref(false);
 const showImportModal = ref(false);
 const showTableModal = ref(false);
 const showReminderModal = ref(false);
+const showRemindersPanel = ref(false);
 const editorRef = ref<InstanceType<typeof WikiEditor> | null>(null);
 let autosaveTimer: number | null = null;
 
@@ -820,6 +822,9 @@ async function handleImportDocument(result: ImportResult) {
           <button class="topbar-btn" @click="handleShowImport" :disabled="saving || isLoading">
             📄 Import
           </button>
+          <button class="topbar-btn ghost" @click="showRemindersPanel = true">
+            📝 Reminders
+          </button>
           <button class="topbar-btn primary" @click="handleSave" :disabled="!hasPageSelected || saving">
             {{ saving ? 'Saving…' : 'Save' }}
           </button>
@@ -920,6 +925,19 @@ async function handleImportDocument(result: ImportResult) {
       @close="showReminderModal = false"
       @insert="handleInsertReminder"
     />
+
+    <!-- Reminders Drawer -->
+    <div v-if="showRemindersPanel" class="reminders-overlay" @click="showRemindersPanel = false">
+      <div class="reminders-drawer" @click.stop>
+        <div class="reminders-drawer-header">
+          <div class="drawer-title">
+            📝 Reminders
+          </div>
+          <button class="drawer-close" @click="showRemindersPanel = false">✕</button>
+        </div>
+        <RemindersApp />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1087,6 +1105,53 @@ async function handleImportDocument(result: ImportResult) {
   color: var(--text-secondary);
 }
 
+.reminders-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  z-index: 1500;
+  backdrop-filter: blur(3px);
+}
+
+.reminders-drawer {
+  width: min(1120px, 92vw);
+  height: 100vh;
+  background: #fff;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.reminders-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--topbar-bg);
+}
+
+.drawer-title {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.drawer-close {
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 6px 8px;
+  color: var(--text-secondary);
+}
+
+.drawer-close:hover {
+  color: var(--text-primary);
+}
+
 @media (prefers-color-scheme: light) {
   .wiki-app {
     --page-bg: #f5f5f5;
@@ -1118,6 +1183,22 @@ async function handleImportDocument(result: ImportResult) {
     --primary-light: rgba(56, 189, 248, 0.35);
     --chip-bg: rgba(56, 189, 248, 0.16);
     --input-bg: #0f172a;
+  }
+
+  .reminders-drawer {
+    background: var(--panel-bg);
+  }
+
+  .reminders-drawer-header {
+    border-bottom-color: var(--border-color);
+  }
+
+  .drawer-close {
+    color: var(--text-secondary);
+  }
+
+  .drawer-close:hover {
+    color: var(--text-primary);
   }
 }
 </style>
