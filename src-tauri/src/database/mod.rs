@@ -1,6 +1,7 @@
 mod init;
 mod operations;
 mod evidence_operations;
+mod sync_operations;
 
 pub use init::init_database;
 pub use operations::{
@@ -16,4 +17,9 @@ pub use evidence_operations::{
     get_all_evidence,
     update_evidence_description,
     delete_evidence,
+};
+pub use sync_operations::{
+    get_sync_settings,
+    update_sync_settings,
+    update_last_sync_time,
 };
