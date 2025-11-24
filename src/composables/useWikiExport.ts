@@ -4,7 +4,6 @@ import { toPng } from 'html-to-image';
 import { Document, Packer, Paragraph, TextRun, ImageRun, HeadingLevel, AlignmentType } from 'docx';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeFile } from '@tauri-apps/plugin-fs';
-import { marked } from 'marked';
 import mermaid from 'mermaid';
 import plantumlEncoder from 'plantuml-encoder';
 
@@ -412,12 +411,13 @@ export function useWikiExport() {
                 new Paragraph({
                   children: [
                     new ImageRun({
-                      data: buffer,
+                      data: buffer as any,
                       transformation: {
                         width: 500,
                         height: 300,
                       },
-                    }),
+                      type: 'png',
+                    } as any),
                   ],
                   spacing: { before: 120, after: 120 },
                   alignment: AlignmentType.CENTER,
