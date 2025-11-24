@@ -149,7 +149,7 @@ export function useWikiExport() {
 
         // Process diagram code blocks
         if (codeBlockType === 'mermaid') {
-          const id = `mermaid-export-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const id = `mermaid-export-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
           const imageData = await renderMermaidToPng(code, id);
           if (imageData) {
             elements.push({
@@ -352,7 +352,7 @@ export function useWikiExport() {
       const elements = await parseMarkdownWithDiagrams(options.content);
 
       // Create document sections
-      const docElements: any[] = [];
+      const docElements: (Paragraph)[] = [];
 
       // Add title
       docElements.push(
@@ -407,17 +407,19 @@ export function useWikiExport() {
               const base64Data = element.imageData.split(',')[1];
               const buffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
 
+              // Note: Type assertion needed due to docx library type definitions
+              // The library expects Buffer but also accepts Uint8Array at runtime
               docElements.push(
                 new Paragraph({
                   children: [
                     new ImageRun({
-                      data: buffer as any,
+                      data: buffer as unknown as Buffer,
                       transformation: {
                         width: 500,
                         height: 300,
                       },
                       type: 'png',
-                    } as any),
+                    } as unknown as ImageRun),
                   ],
                   spacing: { before: 120, after: 120 },
                   alignment: AlignmentType.CENTER,
