@@ -464,7 +464,7 @@ onMounted(() => {
   }
 });
 
-defineExpose({ applyFormat, insertText });
+defineExpose({ applyFormat, insertText, editorMode });
 </script>
 
 <template>

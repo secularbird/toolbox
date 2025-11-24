@@ -75,6 +75,7 @@ const currentSectionName = computed(() => {
 
 const selectedPageId = computed(() => currentPage.value?.id || '');
 const hasPageSelected = computed(() => Boolean(currentPage.value));
+const isWysiwygMode = computed(() => editorRef.value?.editorMode === 'wysiwyg');
 
 onMounted(async () => {
   await bootstrapSections();
@@ -880,8 +881,8 @@ async function handleImportDocument(result: ImportResult) {
             <button class="topbar-btn primary" @click="handleCreatePage">Create first page</button>
           </div>
 
-          <div v-else class="editor-split">
-            <div class="editor-pane">
+          <div v-else class="editor-split" :class="{ 'full-width': isWysiwygMode }">
+            <div class="editor-pane" :class="{ 'full-width': isWysiwygMode }">
               <WikiEditor 
                 ref="editorRef" 
                 v-model="editorContent" 
@@ -889,7 +890,7 @@ async function handleImportDocument(result: ImportResult) {
                 @insertReminder="handleShowReminderInsert"
               />
             </div>
-            <div class="preview-pane">
+            <div v-if="!isWysiwygMode" class="preview-pane">
               <WikiPreview :content="editorContent" />
             </div>
           </div>
@@ -1080,6 +1081,10 @@ async function handleImportDocument(result: ImportResult) {
   min-height: 0;
 }
 
+.editor-split.full-width {
+  grid-template-columns: 1fr;
+}
+
 .editor-pane,
 .preview-pane {
   min-height: 0;
@@ -1089,6 +1094,10 @@ async function handleImportDocument(result: ImportResult) {
 
 .editor-pane {
   border-right: 1px solid var(--border-color);
+}
+
+.editor-pane.full-width {
+  border-right: none;
 }
 
 .preview-pane {
