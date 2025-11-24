@@ -47,6 +47,9 @@
   "plugins": {
     "opener": {
       "requireLiteralLeadingDot": true
+    },
+    "fs": {
+      "scope": ["$DOWNLOAD/**", "$DOCUMENT/**", "$DESKTOP/**", "$HOME/**"]
     }
   }
 }
