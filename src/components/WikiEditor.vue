@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats, renderMarkdown } from '../utils/markdown';
+import { wrapSelection, insertAtCursor, markdownFormats, renderMarkdown, sanitizeHtml } from '../utils/markdown';
 import { EditorHistory } from '../utils/editorHistory';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
@@ -40,6 +40,7 @@ watch(() => props.modelValue, (newVal) => {
     localValue.value = newVal;
     history.reset(newVal);
     // Update WYSIWYG content when modelValue changes
+    // renderMarkdown includes sanitizeHtml to prevent XSS
     if (editorMode.value === 'wysiwyg' && wysiwygRef.value) {
       wysiwygRef.value.innerHTML = renderMarkdown(newVal);
     }
@@ -57,6 +58,7 @@ watch(localValue, (newVal) => {
 watch(editorMode, (newMode, oldMode) => {
   if (newMode === 'wysiwyg' && wysiwygRef.value) {
     // Convert markdown to HTML for WYSIWYG
+    // renderMarkdown includes sanitizeHtml for XSS prevention
     wysiwygRef.value.innerHTML = renderMarkdown(localValue.value);
   } else if (newMode === 'markdown' && oldMode === 'wysiwyg' && wysiwygRef.value) {
     // Convert HTML back to markdown
@@ -407,10 +409,10 @@ function handlePaste(e: ClipboardEvent) {
       return;
     }
   } else {
-    // WYSIWYG mode - allow browser's default paste but sanitize
+    // WYSIWYG mode - sanitize HTML content before allowing paste
     if (!wysiwygRef.value) return;
     
-    // For images, convert to markdown-style data URLs
+    // For images, convert to data URLs
     const imageFile = Array.from(clipboard.files || []).find((file) =>
       file.type.startsWith('image/')
     );
@@ -435,8 +437,22 @@ function handlePaste(e: ClipboardEvent) {
       return;
     }
     
-    // For HTML content, let browser handle it (contenteditable provides built-in sanitization)
-    // The content will be sanitized when converted back to markdown via turndown
+    // For HTML content, sanitize it before paste
+    const htmlContent = clipboard.getData('text/html');
+    if (htmlContent) {
+      e.preventDefault();
+      const sanitized = sanitizeHtml(htmlContent);
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        const template = document.createElement('template');
+        template.innerHTML = sanitized;
+        const fragment = template.content;
+        range.insertNode(fragment);
+      }
+      updateFromWysiwyg();
+    }
   }
 }
 
