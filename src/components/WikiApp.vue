@@ -7,6 +7,7 @@ import WikiMetadata from './WikiMetadata.vue';
 import DocumentImportModal from './DocumentImportModal.vue';
 import TableInsertModal from './TableInsertModal.vue';
 import ReminderInsertModal from './ReminderInsertModal.vue';
+import WikiExportModal from './WikiExportModal.vue';
 import RemindersApp from './RemindersApp.vue';
 import { useWiki } from '../composables/useWikiStore';
 import type { WikiPage, WikiRevisionMeta, WikiPageList } from '../composables/useWikiStore';
@@ -52,6 +53,7 @@ const showImportModal = ref(false);
 const showTableModal = ref(false);
 const showReminderModal = ref(false);
 const showRemindersPanel = ref(false);
+const showExportModal = ref(false);
 const editorRef = ref<InstanceType<typeof WikiEditor> | null>(null);
 let autosaveTimer: number | null = null;
 
@@ -809,6 +811,14 @@ async function handleImportDocument(result: ImportResult) {
     saving.value = false;
   }
 }
+
+function handleShowExport() {
+  if (!currentPage.value) {
+    formError.value = 'No page selected to export';
+    return;
+  }
+  showExportModal.value = true;
+}
 </script>
 
 <template>
@@ -822,6 +832,9 @@ async function handleImportDocument(result: ImportResult) {
           </button>
           <button class="topbar-btn" @click="handleShowImport" :disabled="saving || isLoading">
             📄 Import
+          </button>
+          <button class="topbar-btn" @click="handleShowExport" :disabled="!hasPageSelected || saving || isLoading">
+            📤 Export
           </button>
           <button class="topbar-btn ghost" @click="showRemindersPanel = true">
             📝 Reminders
@@ -925,6 +938,13 @@ async function handleImportDocument(result: ImportResult) {
       v-if="showReminderModal"
       @close="showReminderModal = false"
       @insert="handleInsertReminder"
+    />
+
+    <WikiExportModal 
+      v-if="showExportModal && currentPage"
+      :title="editorTitle || currentPage.title"
+      :content="editorContent"
+      @close="showExportModal = false"
     />
 
     <!-- Reminders Drawer -->

@@ -380,8 +380,6 @@ function formatLastSync(lastSync: string | null | undefined): string {
     return "Invalid date";
   }
 }
-  }
-}
 
 async function loadDebugMode() {
   try {
