@@ -13,8 +13,9 @@ The Wiki feature is a powerful markdown-based knowledge management system built 
 - **Tagging System**: Organize pages with tags
 - **Search**: Full-text search across all wiki pages
 - **Auto-save**: Automatic saving with visual feedback
+- **Export**: Export pages as PDF or Word documents with diagrams rendered (NEW!)
 
-### Diagram Support (New!)
+### Diagram Support
 The wiki now supports embedding two types of diagrams directly in markdown:
 
 #### 1. Mermaid Diagrams
@@ -202,19 +203,41 @@ See `DIAGRAM_EXAMPLES.md` for a comprehensive collection of example diagrams you
 5. **Use consistent styling**: Stick to one diagram type for similar concepts
 6. **Consider privacy**: Use self-hosted PlantUML for sensitive diagrams
 
+## Export Feature
+
+The wiki now supports exporting pages as PDF or Word documents with all diagrams and images rendered. See [Wiki Export Feature Documentation](WIKI_EXPORT_FEATURE.md) for full details.
+
+### Quick Export Guide
+
+1. Open the wiki page you want to export
+2. Click the "📤 Export" button in the toolbar
+3. Choose PDF or Word format
+4. Select where to save the file
+5. Wait for the export to complete
+
+**What's included in exports:**
+- All markdown content (headings, paragraphs, lists, etc.)
+- Images fetched and embedded
+- Mermaid diagrams rendered as PNG images
+- PlantUML diagrams rendered as PNG images
+- Code blocks with basic formatting
+
 ## References
 
 - [Mermaid Documentation](https://mermaid.js.org/)
 - [PlantUML Documentation](https://plantuml.com/)
 - [Markdown Guide](https://www.markdownguide.org/)
+- [Export Feature Guide](WIKI_EXPORT_FEATURE.md)
 
 ## Future Enhancements
 
 Potential improvements for future versions:
 - Self-hosted PlantUML server option
-- Diagram export functionality (PNG, SVG)
+- ~~Diagram export functionality (PNG, SVG)~~ ✅ Implemented via page export
 - Diagram editor with visual interface
 - Additional diagram libraries (GraphViz, D3.js)
 - Collaborative editing with live diagram updates
 - Diagram templates library
 - Custom theme support for diagrams
+- Batch export multiple pages
+- Export with table of contents

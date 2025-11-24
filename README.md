@@ -78,6 +78,16 @@ A beautiful desktop reminder application inspired by macOS Reminders, built with
 - **Bidirectional**: Push to and pull from GitHub (Repository method)
 - See [GitHub Sync Guide](GITHUB_SYNC_GUIDE.md) for setup instructions
 
+### 📚 Wiki Feature (NEW!)
+- **Markdown Editor**: Full-featured markdown editor with live preview
+- **Diagram Support**: Embed Mermaid and PlantUML diagrams
+- **Export**: Export pages as PDF or Word (.docx) with all diagrams rendered as images
+- **Version History**: Track changes with revision history
+- **Tagging System**: Organize pages with tags
+- **Search**: Full-text search across all wiki pages
+- **Import**: Import Word documents (.docx) as wiki pages
+- See [Wiki Feature Guide](WIKI_FEATURE.md) and [Export Guide](WIKI_EXPORT_FEATURE.md) for details
+
 ### 🛠️ Debug Features
 - Toggle in sidebar (🐛 Debug Logs)
 - Press F12 for DevTools
@@ -481,7 +491,15 @@ MIT
 
 ## 📝 Changelog
 
-### v0.2.0 (Current)
+### v0.3.0 (Current)
+- ✨ Added Wiki Export feature - Export pages as PDF or Word with diagrams
+- ✨ Mermaid diagrams rendered as images in exports
+- ✨ PlantUML diagrams rendered as images in exports
+- ✨ Support for embedding external images in exports
+- 🔧 Added Tauri fs plugin for file operations
+- 📚 Comprehensive export documentation
+
+### v0.2.0
 - ✨ Redesigned UI to match macOS Reminders
 - ✨ Added Today list with auto-time feature
 - ✨ Double-click to edit in detail panel
