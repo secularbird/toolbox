@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats } from '../utils/markdown';
+import { ref, watch, onMounted, computed } from 'vue';
+import { wrapSelection, insertAtCursor, markdownFormats, renderMarkdown } from '../utils/markdown';
 import { EditorHistory } from '../utils/editorHistory';
+import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
 
 const props = defineProps<{
   modelValue: string;
@@ -14,16 +16,33 @@ const emit = defineEmits<{
   'insertReminder': [];
 }>();
 
+// Editor mode: 'markdown' or 'wysiwyg'
+const editorMode = ref<'markdown' | 'wysiwyg'>('markdown');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
+const wysiwygRef = ref<HTMLDivElement | null>(null);
 const localValue = ref(props.modelValue);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const history = new EditorHistory(props.modelValue);
 const isUndoRedoing = ref(false);
 
+// Initialize Turndown for HTML to Markdown conversion
+const turndownService = new TurndownService({
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced',
+  bulletListMarker: '-',
+  emDelimiter: '*',
+  strongDelimiter: '**',
+});
+turndownService.use(gfm);
+
 watch(() => props.modelValue, (newVal) => {
   if (localValue.value !== newVal) {
     localValue.value = newVal;
     history.reset(newVal);
+    // Update WYSIWYG content when modelValue changes
+    if (editorMode.value === 'wysiwyg' && wysiwygRef.value) {
+      wysiwygRef.value.innerHTML = renderMarkdown(newVal);
+    }
   }
 });
 
@@ -34,21 +53,144 @@ watch(localValue, (newVal) => {
   emit('update:modelValue', newVal);
 });
 
+// Watch for mode changes
+watch(editorMode, (newMode, oldMode) => {
+  if (newMode === 'wysiwyg' && wysiwygRef.value) {
+    // Convert markdown to HTML for WYSIWYG
+    wysiwygRef.value.innerHTML = renderMarkdown(localValue.value);
+  } else if (newMode === 'markdown' && oldMode === 'wysiwyg' && wysiwygRef.value) {
+    // Convert HTML back to markdown
+    const html = wysiwygRef.value.innerHTML;
+    localValue.value = turndownService.turndown(html);
+  }
+});
+
 function applyFormat(formatKey: keyof typeof markdownFormats) {
-  if (!textareaRef.value) return;
-  const format = markdownFormats[formatKey];
-  localValue.value = wrapSelection(textareaRef.value, format.before, format.after);
+  if (editorMode.value === 'markdown') {
+    if (!textareaRef.value) return;
+    const format = markdownFormats[formatKey];
+    localValue.value = wrapSelection(textareaRef.value, format.before, format.after);
+  } else {
+    // WYSIWYG mode - use execCommand
+    applyWysiwygFormat(formatKey);
+  }
+}
+
+function applyWysiwygFormat(formatKey: keyof typeof markdownFormats) {
+  if (!wysiwygRef.value) return;
+  
+  wysiwygRef.value.focus();
+  
+  const commandMap: Record<string, string> = {
+    bold: 'bold',
+    italic: 'italic',
+    code: 'insertHTML', // Special handling needed
+    h1: 'formatBlock',
+    h2: 'formatBlock',
+    h3: 'formatBlock',
+    quote: 'formatBlock',
+    ul: 'insertUnorderedList',
+    ol: 'insertOrderedList',
+    link: 'createLink',
+    codeBlock: 'insertHTML', // Special handling needed
+  };
+  
+  const command = commandMap[formatKey];
+  
+  try {
+    if (formatKey === 'code') {
+      // Wrap selection in <code> tag
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const selectedText = range.toString();
+        const code = document.createElement('code');
+        code.textContent = selectedText || 'code';
+        range.deleteContents();
+        range.insertNode(code);
+        
+        // Move cursor after the code element
+        range.setStartAfter(code);
+        range.setEndAfter(code);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    } else if (formatKey === 'codeBlock') {
+      // Insert a code block
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const selectedText = range.toString() || 'code block';
+        const pre = document.createElement('pre');
+        const code = document.createElement('code');
+        code.textContent = selectedText;
+        pre.appendChild(code);
+        range.deleteContents();
+        range.insertNode(pre);
+        
+        // Add line break after pre
+        const br = document.createElement('br');
+        range.setStartAfter(pre);
+        range.insertNode(br);
+        range.setStartAfter(br);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    } else if (formatKey === 'h1') {
+      document.execCommand('formatBlock', false, '<h1>');
+    } else if (formatKey === 'h2') {
+      document.execCommand('formatBlock', false, '<h2>');
+    } else if (formatKey === 'h3') {
+      document.execCommand('formatBlock', false, '<h3>');
+    } else if (formatKey === 'quote') {
+      document.execCommand('formatBlock', false, '<blockquote>');
+    } else if (formatKey === 'link') {
+      const url = prompt('Enter URL:', 'https://');
+      if (url) {
+        document.execCommand(command, false, url);
+      }
+    } else {
+      document.execCommand(command, false);
+    }
+    
+    // Update localValue from WYSIWYG content
+    updateFromWysiwyg();
+  } catch (error) {
+    console.error('Error applying WYSIWYG format:', error);
+  }
+}
+
+function updateFromWysiwyg() {
+  if (!wysiwygRef.value) return;
+  const html = wysiwygRef.value.innerHTML;
+  localValue.value = turndownService.turndown(html);
 }
 
 function insertText(text: string) {
-  if (!textareaRef.value) return;
-  localValue.value = insertAtCursor(textareaRef.value, text);
+  if (editorMode.value === 'markdown') {
+    if (!textareaRef.value) return;
+    localValue.value = insertAtCursor(textareaRef.value, text);
+  } else {
+    // WYSIWYG mode
+    if (!wysiwygRef.value) return;
+    wysiwygRef.value.focus();
+    document.execCommand('insertText', false, text);
+    updateFromWysiwyg();
+  }
 }
 
 function insertContentBlock(text: string) {
-  if (!textareaRef.value) return;
-  const content = localValue.value ? `${text}` : text;
-  localValue.value = insertAtCursor(textareaRef.value, content);
+  if (editorMode.value === 'markdown') {
+    if (!textareaRef.value) return;
+    const content = localValue.value ? `${text}` : text;
+    localValue.value = insertAtCursor(textareaRef.value, content);
+  } else {
+    // WYSIWYG mode - insert as HTML
+    if (!wysiwygRef.value) return;
+    wysiwygRef.value.focus();
+    document.execCommand('insertHTML', false, text);
+    updateFromWysiwyg();
+  }
 }
 
 async function handleFileSelect(e: Event) {
@@ -108,6 +250,14 @@ function handleRedo() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
+  if (editorMode.value === 'markdown') {
+    handleMarkdownKeydown(e);
+  } else {
+    handleWysiwygKeydown(e);
+  }
+}
+
+function handleMarkdownKeydown(e: KeyboardEvent) {
   if (e.key === 'Tab') {
     handleTab(e);
   } else if (e.ctrlKey || e.metaKey) {
@@ -152,6 +302,53 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
+function handleWysiwygKeydown(e: KeyboardEvent) {
+  if (e.ctrlKey || e.metaKey) {
+    switch (e.key) {
+      case 'b':
+        e.preventDefault();
+        applyFormat('bold');
+        break;
+      case 'i':
+        e.preventDefault();
+        applyFormat('italic');
+        break;
+      case 'k':
+        e.preventDefault();
+        applyFormat('link');
+        break;
+      case 't':
+        if (e.shiftKey) {
+          e.preventDefault();
+          emit('insertTable');
+        }
+        break;
+      case 'r':
+        if (e.shiftKey) {
+          e.preventDefault();
+          emit('insertReminder');
+        }
+        break;
+      case 'z':
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+        break;
+      case 'y':
+        e.preventDefault();
+        handleRedo();
+        break;
+    }
+  }
+}
+
+function handleWysiwygInput() {
+  updateFromWysiwyg();
+}
+
 function handlePaste(e: ClipboardEvent) {
   const clipboard = e.clipboardData;
   if (!clipboard || !textareaRef.value) return;
@@ -182,7 +379,11 @@ function handlePaste(e: ClipboardEvent) {
 }
 
 onMounted(() => {
-  textareaRef.value?.focus();
+  if (editorMode.value === 'markdown') {
+    textareaRef.value?.focus();
+  } else {
+    wysiwygRef.value?.focus();
+  }
 });
 
 defineExpose({ applyFormat, insertText });
@@ -191,6 +392,25 @@ defineExpose({ applyFormat, insertText });
 <template>
   <div class="wiki-editor">
     <div class="editor-toolbar">
+      <div class="toolbar-group">
+        <button 
+          @click="editorMode = 'markdown'" 
+          :class="['mode-btn', { active: editorMode === 'markdown' }]"
+          title="Markdown Mode"
+        >
+          📝 Markdown
+        </button>
+        <button 
+          @click="editorMode = 'wysiwyg'" 
+          :class="['mode-btn', { active: editorMode === 'wysiwyg' }]"
+          title="WYSIWYG Mode"
+        >
+          👁️ WYSIWYG
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
       <div class="toolbar-group">
         <button @click="applyFormat('bold')" title="Bold (Ctrl+B)" class="toolbar-btn">
           <strong>B</strong>
@@ -255,6 +475,7 @@ defineExpose({ applyFormat, insertText });
     </div>
 
     <textarea
+      v-if="editorMode === 'markdown'"
       ref="textareaRef"
       v-model="localValue"
       :placeholder="placeholder || 'Write your markdown here...'"
@@ -263,6 +484,17 @@ defineExpose({ applyFormat, insertText });
       @paste="handlePaste"
       spellcheck="false"
     ></textarea>
+
+    <div
+      v-else
+      ref="wysiwygRef"
+      contenteditable="true"
+      :placeholder="placeholder || 'Write your content here...'"
+      class="editor-wysiwyg"
+      @input="handleWysiwygInput"
+      @keydown="handleKeydown"
+      @paste="handlePaste"
+    ></div>
   </div>
 </template>
 
@@ -291,6 +523,31 @@ defineExpose({ applyFormat, insertText });
 
 .file-input {
   display: none;
+}
+
+.mode-btn {
+  padding: 6px 12px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.mode-btn:hover {
+  background: var(--btn-hover-bg);
+  border-color: var(--primary-color);
+}
+
+.mode-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+  font-weight: 600;
 }
 
 .toolbar-btn {
@@ -350,6 +607,125 @@ defineExpose({ applyFormat, insertText });
   color: var(--text-tertiary);
 }
 
+.editor-wysiwyg {
+  flex: 1;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  background: var(--editor-bg);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  outline: none;
+  overflow-y: auto;
+  cursor: text;
+}
+
+.editor-wysiwyg:empty:before {
+  content: attr(placeholder);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+/* WYSIWYG content styling */
+.editor-wysiwyg :deep(h1),
+.editor-wysiwyg :deep(h2),
+.editor-wysiwyg :deep(h3),
+.editor-wysiwyg :deep(h4),
+.editor-wysiwyg :deep(h5),
+.editor-wysiwyg :deep(h6) {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.editor-wysiwyg :deep(h1) {
+  font-size: 2em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3em;
+}
+
+.editor-wysiwyg :deep(h2) {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.3em;
+}
+
+.editor-wysiwyg :deep(h3) {
+  font-size: 1.25em;
+}
+
+.editor-wysiwyg :deep(p) {
+  margin-bottom: 16px;
+}
+
+.editor-wysiwyg :deep(a) {
+  color: var(--link-color);
+  text-decoration: none;
+}
+
+.editor-wysiwyg :deep(a:hover) {
+  text-decoration: underline;
+}
+
+.editor-wysiwyg :deep(code) {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 85%;
+  background: var(--code-bg);
+  border-radius: 6px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.editor-wysiwyg :deep(pre) {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background: var(--code-block-bg);
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.editor-wysiwyg :deep(pre code) {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.editor-wysiwyg :deep(blockquote) {
+  padding: 0 1em;
+  color: var(--text-secondary);
+  border-left: 0.25em solid var(--border-color);
+  margin-bottom: 16px;
+}
+
+.editor-wysiwyg :deep(ul),
+.editor-wysiwyg :deep(ol) {
+  padding-left: 2em;
+  margin-bottom: 16px;
+}
+
+.editor-wysiwyg :deep(li) {
+  margin-bottom: 4px;
+}
+
+.editor-wysiwyg :deep(strong) {
+  font-weight: 600;
+}
+
+.editor-wysiwyg :deep(em) {
+  font-style: italic;
+}
+
+.editor-wysiwyg :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
   .wiki-editor {
@@ -357,10 +733,14 @@ defineExpose({ applyFormat, insertText });
     --toolbar-bg: #2c2c2e;
     --border-color: #38383a;
     --text-primary: #f5f5f7;
+    --text-secondary: #98989d;
     --text-tertiary: #636366;
     --primary-color: #0a84ff;
     --btn-bg: #3a3a3c;
     --btn-hover-bg: #48484a;
+    --link-color: #0a84ff;
+    --code-bg: #2c2c2e;
+    --code-block-bg: #2c2c2e;
   }
 }
 
@@ -371,10 +751,14 @@ defineExpose({ applyFormat, insertText });
     --toolbar-bg: #f5f5f7;
     --border-color: #e5e5ea;
     --text-primary: #1d1d1f;
+    --text-secondary: #86868b;
     --text-tertiary: #98989d;
     --primary-color: #007aff;
     --btn-bg: #ffffff;
     --btn-hover-bg: #e8e8ed;
+    --link-color: #007aff;
+    --code-bg: #f5f5f7;
+    --code-block-bg: #f5f5f7;
   }
 }
 </style>
