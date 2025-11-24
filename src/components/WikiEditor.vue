@@ -81,6 +81,12 @@ function applyWysiwygFormat(formatKey: keyof typeof markdownFormats) {
   
   wysiwygRef.value.focus();
   
+  // Note: document.execCommand is deprecated but still widely supported
+  // and provides the most reliable cross-browser WYSIWYG editing experience.
+  // Modern alternatives like the Selection API require significantly more complex
+  // implementation for the same functionality. We'll migrate when a stable
+  // replacement API is broadly available.
+  
   const commandMap: Record<string, string> = {
     bold: 'bold',
     italic: 'italic',
@@ -147,7 +153,17 @@ function applyWysiwygFormat(formatKey: keyof typeof markdownFormats) {
     } else if (formatKey === 'link') {
       const url = prompt('Enter URL:', 'https://');
       if (url) {
-        document.execCommand(command, false, url);
+        // Validate URL to prevent javascript: and other dangerous protocols
+        try {
+          const urlObj = new URL(url);
+          if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+            document.execCommand(command, false, url);
+          } else {
+            alert('Only http:// and https:// URLs are allowed');
+          }
+        } catch (e) {
+          alert('Invalid URL');
+        }
       }
     } else {
       document.execCommand(command, false);
@@ -185,10 +201,21 @@ function insertContentBlock(text: string) {
     const content = localValue.value ? `${text}` : text;
     localValue.value = insertAtCursor(textareaRef.value, content);
   } else {
-    // WYSIWYG mode - insert as HTML
+    // WYSIWYG mode - sanitize HTML before insertion
     if (!wysiwygRef.value) return;
     wysiwygRef.value.focus();
-    document.execCommand('insertHTML', false, text);
+    
+    // Check if text is HTML (contains tags)
+    const isHTML = /<[^>]+>/.test(text);
+    if (isHTML) {
+      // Sanitize HTML content before insertion
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, 'text/html');
+      const sanitized = doc.body.textContent || '';
+      document.execCommand('insertText', false, sanitized);
+    } else {
+      document.execCommand('insertText', false, text);
+    }
     updateFromWysiwyg();
   }
 }
@@ -351,30 +378,65 @@ function handleWysiwygInput() {
 
 function handlePaste(e: ClipboardEvent) {
   const clipboard = e.clipboardData;
-  if (!clipboard || !textareaRef.value) return;
+  if (!clipboard) return;
 
-  // Paste image blobs as data URLs to preserve inline content
-  const imageFile = Array.from(clipboard.files || []).find((file) =>
-    file.type.startsWith('image/')
-  );
-  if (imageFile) {
-    e.preventDefault();
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        insertContentBlock(`![pasted-image](${reader.result})`);
-      }
-    };
-    reader.readAsDataURL(imageFile);
-    return;
-  }
+  if (editorMode.value === 'markdown') {
+    if (!textareaRef.value) return;
 
-  // Prefer HTML content to preserve formatting
-  const htmlContent = clipboard.getData('text/html');
-  if (htmlContent) {
-    e.preventDefault();
-    insertContentBlock(htmlContent.trim());
-    return;
+    // Paste image blobs as data URLs to preserve inline content
+    const imageFile = Array.from(clipboard.files || []).find((file) =>
+      file.type.startsWith('image/')
+    );
+    if (imageFile) {
+      e.preventDefault();
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          insertContentBlock(`![pasted-image](${reader.result})`);
+        }
+      };
+      reader.readAsDataURL(imageFile);
+      return;
+    }
+
+    // Prefer HTML content to preserve formatting
+    const htmlContent = clipboard.getData('text/html');
+    if (htmlContent) {
+      e.preventDefault();
+      insertContentBlock(htmlContent.trim());
+      return;
+    }
+  } else {
+    // WYSIWYG mode - allow browser's default paste but sanitize
+    if (!wysiwygRef.value) return;
+    
+    // For images, convert to markdown-style data URLs
+    const imageFile = Array.from(clipboard.files || []).find((file) =>
+      file.type.startsWith('image/')
+    );
+    if (imageFile) {
+      e.preventDefault();
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          const img = document.createElement('img');
+          img.src = reader.result;
+          img.alt = 'pasted-image';
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(img);
+          }
+          updateFromWysiwyg();
+        }
+      };
+      reader.readAsDataURL(imageFile);
+      return;
+    }
+    
+    // For HTML content, let browser handle it (contenteditable provides built-in sanitization)
+    // The content will be sanitized when converted back to markdown via turndown
   }
 }
 
