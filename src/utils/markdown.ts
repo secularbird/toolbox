@@ -3,7 +3,7 @@ import hljs from 'highlight.js';
 import plantumlEncoder from 'plantuml-encoder';
 
 // Generate a unique ID for each diagram using crypto.randomUUID with fallback
-function generateDiagramId(type: string): string {
+export function generateDiagramId(type: string): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return `${type}-${crypto.randomUUID()}`;
   }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, nextTick } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats, renderMarkdown, sanitizeHtml } from '../utils/markdown';
+import { wrapSelection, insertAtCursor, markdownFormats, renderMarkdown, sanitizeHtml, generateDiagramId } from '../utils/markdown';
 import { EditorHistory } from '../utils/editorHistory';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
@@ -86,7 +86,7 @@ async function renderMermaidInWysiwyg() {
       for (const element of Array.from(mermaidElements)) {
         try {
           element.setAttribute('data-processed', 'processing');
-          const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const id = generateDiagramId('mermaid');
           element.id = id;
 
           await mermaid.run({
@@ -97,7 +97,7 @@ async function renderMermaidInWysiwyg() {
         } catch (err) {
           console.error('Mermaid rendering error for element:', err);
           element.setAttribute('data-processed', 'error');
-          element.innerHTML = `<div class="diagram-error">Mermaid 渲染错误: ${err instanceof Error ? err.message : String(err)}</div>`;
+          element.innerHTML = `<div class="diagram-error">Mermaid rendering error: ${err instanceof Error ? err.message : String(err)}</div>`;
         }
       }
     }
@@ -539,7 +539,7 @@ onMounted(() => {
   
   // Re-initialize Mermaid when color scheme changes
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  mediaQuery.addEventListener('change', () => {
+  mediaQuery.addEventListener('change', async () => {
     initMermaid();
     // Re-render all diagrams in WYSIWYG mode
     if (editorMode.value === 'wysiwyg' && wysiwygRef.value) {
@@ -549,7 +549,7 @@ onMounted(() => {
         el.removeAttribute('id');
       });
       mermaidRenderingInProgress = false;
-      renderMermaidInWysiwyg();
+      await renderMermaidInWysiwyg();
     }
   });
   
