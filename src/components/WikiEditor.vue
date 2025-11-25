@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue';
+import { ref, watch, onMounted, nextTick } from 'vue';
 import { wrapSelection, insertAtCursor, markdownFormats, renderMarkdown, sanitizeHtml } from '../utils/markdown';
 import { EditorHistory } from '../utils/editorHistory';
 import TurndownService from 'turndown';
 import { gfm } from 'turndown-plugin-gfm';
+import mermaid from 'mermaid';
 
 const props = defineProps<{
   modelValue: string;
@@ -35,7 +36,79 @@ const turndownService = new TurndownService({
 });
 turndownService.use(gfm);
 
-watch(() => props.modelValue, (newVal) => {
+// Track mermaid rendering state
+let mermaidRenderingInProgress = false;
+
+// Detect if dark mode is enabled
+const isDarkMode = () => {
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+};
+
+// Initialize Mermaid with configuration
+const initMermaid = () => {
+  const darkMode = isDarkMode();
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: darkMode ? 'dark' : 'default',
+    securityLevel: 'loose',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+    },
+    sequence: {
+      diagramMarginX: 50,
+      diagramMarginY: 10,
+      actorMargin: 50,
+      width: 150,
+      height: 65,
+      boxMargin: 10,
+      boxTextMargin: 5,
+      noteMargin: 10,
+      messageMargin: 35,
+    },
+  });
+};
+
+// Render Mermaid diagrams in WYSIWYG editor
+async function renderMermaidInWysiwyg() {
+  if (mermaidRenderingInProgress || !wysiwygRef.value) {
+    return;
+  }
+
+  mermaidRenderingInProgress = true;
+  await nextTick();
+
+  try {
+    const mermaidElements = wysiwygRef.value.querySelectorAll('.mermaid:not([data-processed="rendered"])');
+
+    if (mermaidElements.length > 0) {
+      for (const element of Array.from(mermaidElements)) {
+        try {
+          element.setAttribute('data-processed', 'processing');
+          const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          element.id = id;
+
+          await mermaid.run({
+            nodes: [element as HTMLElement],
+          });
+
+          element.setAttribute('data-processed', 'rendered');
+        } catch (err) {
+          console.error('Mermaid rendering error for element:', err);
+          element.setAttribute('data-processed', 'error');
+          element.innerHTML = `<div class="diagram-error">Mermaid 渲染错误: ${err instanceof Error ? err.message : String(err)}</div>`;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Mermaid batch rendering error:', error);
+  } finally {
+    mermaidRenderingInProgress = false;
+  }
+}
+
+watch(() => props.modelValue, async (newVal) => {
   if (localValue.value !== newVal) {
     localValue.value = newVal;
     history.reset(newVal);
@@ -43,6 +116,8 @@ watch(() => props.modelValue, (newVal) => {
     // renderMarkdown includes sanitizeHtml to prevent XSS
     if (editorMode.value === 'wysiwyg' && wysiwygRef.value) {
       wysiwygRef.value.innerHTML = renderMarkdown(newVal);
+      // Render Mermaid diagrams after setting HTML content
+      await renderMermaidInWysiwyg();
     }
   }
 });
@@ -55,11 +130,13 @@ watch(localValue, (newVal) => {
 });
 
 // Watch for mode changes
-watch(editorMode, (newMode, oldMode) => {
+watch(editorMode, async (newMode, oldMode) => {
   if (newMode === 'wysiwyg' && wysiwygRef.value) {
     // Convert markdown to HTML for WYSIWYG
     // renderMarkdown includes sanitizeHtml for XSS prevention
     wysiwygRef.value.innerHTML = renderMarkdown(localValue.value);
+    // Render Mermaid diagrams after setting HTML content
+    await renderMermaidInWysiwyg();
   } else if (newMode === 'markdown' && oldMode === 'wysiwyg' && wysiwygRef.value) {
     // Convert HTML back to markdown
     const html = wysiwygRef.value.innerHTML;
@@ -457,6 +534,25 @@ function handlePaste(e: ClipboardEvent) {
 }
 
 onMounted(() => {
+  // Initialize Mermaid
+  initMermaid();
+  
+  // Re-initialize Mermaid when color scheme changes
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  mediaQuery.addEventListener('change', () => {
+    initMermaid();
+    // Re-render all diagrams in WYSIWYG mode
+    if (editorMode.value === 'wysiwyg' && wysiwygRef.value) {
+      const elements = wysiwygRef.value.querySelectorAll('.mermaid[data-processed="rendered"]');
+      elements.forEach(el => {
+        el.removeAttribute('data-processed');
+        el.removeAttribute('id');
+      });
+      mermaidRenderingInProgress = false;
+      renderMermaidInWysiwyg();
+    }
+  });
+  
   if (editorMode.value === 'markdown') {
     textareaRef.value?.focus();
   } else {
@@ -804,6 +900,49 @@ defineExpose({ applyFormat, insertText, editorMode });
   border-radius: 8px;
 }
 
+/* Diagram styles for WYSIWYG mode */
+.editor-wysiwyg :deep(.diagram-container) {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--diagram-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+}
+
+.editor-wysiwyg :deep(.diagram-image) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.editor-wysiwyg :deep(.mermaid) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--diagram-bg);
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+  min-height: 100px;
+}
+
+.editor-wysiwyg :deep(.mermaid svg) {
+  max-width: 100%;
+  height: auto;
+}
+
+.editor-wysiwyg :deep(.diagram-error) {
+  color: var(--error-color);
+  padding: 12px;
+  background: var(--error-bg);
+  border-radius: 6px;
+  font-family: monospace;
+}
+
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
   .wiki-editor {
@@ -819,6 +958,9 @@ defineExpose({ applyFormat, insertText, editorMode });
     --link-color: #0a84ff;
     --code-bg: #2c2c2e;
     --code-block-bg: #2c2c2e;
+    --diagram-bg: #2c2c2e;
+    --error-color: #ff453a;
+    --error-bg: rgba(255, 69, 58, 0.1);
   }
 }
 
@@ -837,6 +979,9 @@ defineExpose({ applyFormat, insertText, editorMode });
     --link-color: #007aff;
     --code-bg: #f5f5f7;
     --code-block-bg: #f5f5f7;
+    --diagram-bg: #fafafa;
+    --error-color: #ff3b30;
+    --error-bg: rgba(255, 59, 48, 0.1);
   }
 }
 </style>
