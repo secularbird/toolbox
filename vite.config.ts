@@ -14,14 +14,14 @@ export default defineConfig(async () => ({
   clearScreen: false,
   // 2. tauri expects a fixed port, fail if that port is not available
   server: {
-    port: 1420,
-    strictPort: false, // Allow Vite to use a different port if 1420 is busy
+    port: 17520,
+    strictPort: false, // Allow Vite to use a different port if 17520 is busy
     host: host || false,
     hmr: host
       ? {
           protocol: "ws",
           host,
-          port: 1421,
+          port: 17521,
         }
       : undefined,
     watch: {

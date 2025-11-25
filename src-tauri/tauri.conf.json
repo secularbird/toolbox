@@ -5,7 +5,7 @@
   "identifier": "com.yaozhuang.tauri-vue-app",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1420",
+    "devUrl": "http://localhost:17520",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },

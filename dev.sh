@@ -2,24 +2,24 @@
 
 # Script to clean up ports and start dev server safely
 
-echo "🔍 Checking for processes on ports 1420 and 1421..."
+echo "🔍 Checking for processes on ports 17520 and 17521..."
 
-# Kill processes on port 1420
-if lsof -ti:1420 > /dev/null 2>&1; then
-  echo "⚠️  Port 1420 is in use. Killing processes..."
-  lsof -ti:1420 | xargs kill -9 2>/dev/null
-  echo "✅ Port 1420 cleared"
+# Kill processes on port 17520
+if lsof -ti:17520 > /dev/null 2>&1; then
+  echo "⚠️  Port 17520 is in use. Killing processes..."
+  lsof -ti:17520 | xargs kill -9 2>/dev/null
+  echo "✅ Port 17520 cleared"
 else
-  echo "✓ Port 1420 is available"
+  echo "✓ Port 17520 is available"
 fi
 
-# Kill processes on port 1421 (HMR)
-if lsof -ti:1421 > /dev/null 2>&1; then
-  echo "⚠️  Port 1421 is in use. Killing processes..."
-  lsof -ti:1421 | xargs kill -9 2>/dev/null
-  echo "✅ Port 1421 cleared"
+# Kill processes on port 17521 (HMR)
+if lsof -ti:17521 > /dev/null 2>&1; then
+  echo "⚠️  Port 17521 is in use. Killing processes..."
+  lsof -ti:17521 | xargs kill -9 2>/dev/null
+  echo "✅ Port 17521 cleared"
 else
-  echo "✓ Port 1421 is available"
+  echo "✓ Port 17521 is available"
 fi
 
 echo ""

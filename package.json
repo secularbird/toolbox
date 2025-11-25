@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "dev:clean": "./dev.sh",
-    "port:clean": "lsof -ti:1420 | xargs kill -9 2>/dev/null; lsof -ti:1421 | xargs kill -9 2>/dev/null; echo 'Ports cleared'"
+    "port:clean": "lsof -ti:17520 | xargs kill -9 2>/dev/null; lsof -ti:17521 | xargs kill -9 2>/dev/null; echo 'Ports cleared'"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
