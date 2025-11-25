@@ -1,66 +1,66 @@
-# 📝 Tauri Vue Reminder App
+# 🧰 Toolbox - Productivity Desktop App
 
-A beautiful desktop reminder application inspired by macOS Reminders, built with Tauri, Vue.js 3, and Rust with local SQLite storage.
+A powerful multi-tool desktop productivity application built with Tauri 2, Vue.js 3, and Rust with local SQLite storage. Combines a full-featured Reminders app with a Wiki/Knowledge Base system.
 
-## ✨ Features Overview
+> **Toolbox 工具箱** - 桌面生产力应用，集成提醒应用和知识库系统
 
-### 🎨 UI/UX (macOS Reminders Style)
+## ✨ Features Overview | 功能概述
+
+### 📚 Wiki / Knowledge Base | 知识库
+- **Markdown editor**: Full Markdown support with live preview
+- **WYSIWYG mode**: Rich text editing mode
+- **Diagram support**: Mermaid and PlantUML diagrams
+- **Code highlighting**: Syntax highlighting via highlight.js
+- **Sections/Notebooks**: Organize pages into hierarchical sections
+- **Version history**: Automatic revision tracking with restore capability
+- **Tags**: Flexible tag-based organization
+- **Search**: Full-text search across all pages
+- **Document import**: Import external documents (Word, etc.)
+- **Table insertion**: Easy table creation via modal
+- **Reminder integration**: Insert reminder references into wiki pages
+
+### 📝 Reminders App | 提醒应用
 - **Three-column layout**: Smart Lists | Reminders | Detail Panel
 - **macOS design language**: SF Pro font style, Apple color system, rounded corners
 - **Complete dark mode support**: Auto-follows system preferences
 - **Smooth animations**: Slide-in panels, checkbox animations, hover effects
-- **Empty state designs**: Elegant placeholders with icons
 
-### 📋 Smart Lists
+#### 📋 Smart Lists
 - **📅 Today**: Quick-add reminders for today (auto-sets time to now)
 - **📆 Scheduled**: All reminders with due dates
 - **🚩 Flagged**: Important/starred reminders
 - **📋 All**: Complete overview of all reminders
 
-### 📁 User Lists (Custom Categories)
-- 💼 Work
-- 👤 Personal
-- 🛒 Shopping
-- 🏥 Health
-- 📌 Other
+#### 📁 User Lists (Custom Categories)
+- 💼 Work | 👤 Personal | 🛒 Shopping | 🏥 Health | 📌 Other
 - ➕ Add custom categories dynamically
 
-### ⚡ Quick Actions
+#### ⚡ Quick Actions
 - **Fast add**: Type title + Enter in any list
 - **Today list special**: No time picker needed, auto-sets to current time
 - **Single-click**: Toggle completion status
 - **Double-click**: Open detail editing panel
 - **Hover**: Show action buttons (flag, delete)
 
-### 📝 Reminder Properties
+#### 📝 Reminder Properties
 - Title and multi-line notes
 - Due date and time
 - Repeat frequency: Once, Daily, Weekly, Monthly, Yearly
 - Category/List assignment
 - Flag/Star for importance
-- Priority levels (0-3) - ready for future use
-- Tags support - ready for future use
+- **File attachments**: Attach documents, images, and files to reminders
 
-### 🔍 Detail Edit Panel
-**Double-click any reminder to open:**
-- ✓ Toggle completion (large circular checkbox)
-- 📝 Edit title inline
-- 📄 Add/edit notes (textarea)
-- 📅 Set/change date & time
-- 🔄 Change repeat frequency
-- 📁 Move to different list
-- 🚩 Add/remove flag
-- 💾 Save changes button
-- 🗑️ Delete reminder button
-- ✕ Close panel
+#### 📎 Evidence/Attachments System | 附件系统
+- Upload files to reminders (images, documents, etc.)
+- Automatic file type detection
+- Image preview modal
+- File size display
+- Open attached files with system default application
 
 ### 🔔 Notification System
-- Independent notification window (notification.html)
+- Independent notification window
 - Checks for due reminders every 30 seconds
-- Top-right corner popup display
-- Shows incomplete overdue tasks
 - Quick actions: Complete or Snooze
-- Auto-closes when no tasks remain
 - Real-time sync with main window
 
 ### 🔄 Real-time Sync
@@ -69,13 +69,11 @@ A beautiful desktop reminder application inspired by macOS Reminders, built with
 - No external servers or WebSocket needed
 - Instant updates across all views
 
-### ☁️ GitHub Sync (NEW!)
+### ☁️ GitHub Sync
 - **Cloud Backup**: Sync reminders to GitHub for safekeeping
-- **Cross-Device**: Access your data from multiple devices
 - **Two Methods**: GitHub Gist or Repository JSON file
-- **Security**: Token stored locally, encrypted communication
+- **Security**: Token stored locally
 - **Manual & Auto Sync**: One-click sync or automatic periodic sync
-- **Bidirectional**: Push to and pull from GitHub (Repository method)
 - See [GitHub Sync Guide](GITHUB_SYNC_GUIDE.md) for setup instructions
 
 ### 🛠️ Debug Features
@@ -83,7 +81,6 @@ A beautiful desktop reminder application inspired by macOS Reminders, built with
 - Press F12 for DevTools
 - Console logging with prefixes: `[APP]`, `[NOTIFICATION]`
 - Real-time connection status
-- Reminder count display
 
 ## 🚀 Quick Start
 
@@ -150,111 +147,149 @@ The built application will be in `src-tauri/target/release/`.
 - **Enter**: Quick add reminder
 - **F12**: Open DevTools (when debug enabled)
 
-## 🏗️ Architecture
+## 🏗️ Architecture | 架构
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│                  Tauri Application                      │
-│                                                         │
-│  ┌──────────────┐   Tauri Events   ┌──────────────┐  │
-│  │   Main UI    │◄─────────────────►│ Notification │  │
-│  │  (App.vue)   │                   │   Window     │  │
-│  └──────┬───────┘                   └──────┬───────┘  │
-│         │                                   │          │
-│         │         ┌──────────────┐         │          │
-│         └────────►│ Rust Backend │◄────────┘          │
-│                   │  (Commands)  │                    │
-│                   └──────┬───────┘                    │
-│                          │                            │
-│                   ┌──────▼───────┐                    │
-│                   │    SQLite    │                    │
-│                   │   Database   │                    │
-│                   └──────────────┘                    │
-└─────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────┐
+│                        Tauri Application                               │
+│                                                                        │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │                    Vue.js 3 Frontend                            │  │
+│  │                                                                  │  │
+│  │  ┌────────────┐     ┌──────────────┐     ┌─────────────────┐   │  │
+│  │  │  WikiApp   │────►│ RemindersApp │     │ Notification    │   │  │
+│  │  │  (Main)    │     │  (Drawer)    │     │ Window          │   │  │
+│  │  └─────┬──────┘     └──────┬───────┘     └───────┬─────────┘   │  │
+│  │        │                   │                     │              │  │
+│  │        └───────────────────┼─────────────────────┘              │  │
+│  │                            │                                    │  │
+│  │                   Tauri IPC (invoke/emit/listen)               │  │
+│  └────────────────────────────┼────────────────────────────────────┘  │
+│                               │                                        │
+│  ┌────────────────────────────┴────────────────────────────────────┐  │
+│  │                      Rust Backend                                │  │
+│  │                                                                  │  │
+│  │  ┌────────────┐  ┌──────────────┐  ┌────────────┐              │  │
+│  │  │ Reminder   │  │    Wiki      │  │  Evidence  │              │  │
+│  │  │ Commands   │  │  Commands    │  │  Commands  │              │  │
+│  │  │  (9 cmds)  │  │  (12 cmds)   │  │ (10 cmds)  │              │  │
+│  │  └─────┬──────┘  └──────┬───────┘  └─────┬──────┘              │  │
+│  │        │                │                │                      │  │
+│  │        └────────────────┼────────────────┘                      │  │
+│  │                         │                                        │  │
+│  │  ┌──────────────────────┴───────────────────────────────────┐  │  │
+│  │  │                   Data Storage                             │  │  │
+│  │  │                                                            │  │  │
+│  │  │  SQLite Database              File System                  │  │  │
+│  │  │  (reminders, evidence)        (wiki pages, revisions)      │  │  │
+│  │  └────────────────────────────────────────────────────────────┘  │  │
+│  │                                                                  │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐    │  │
+│  │  │ Sync (GitHub│  │ Notification│  │ System Tray         │    │  │
+│  │  │ Gist/Repo)  │  │ Service     │  │ (Desktop only)      │    │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────────────┘    │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────┘
 
-Event Flow:
-1. User action → Tauri Command → Database update
-2. Database update → Emit "reminders-updated" event
-3. All windows listen → Auto-refresh UI
+Screen Navigation Flow:
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│   AppSimple.vue (Entry Point)                                       │
+│         │                                                            │
+│         ▼                                                            │
+│   ┌─────────────────────────────────────────────────────────────┐   │
+│   │                     WikiApp.vue                              │   │
+│   │  ┌────────────┐ ┌──────────────────┐ ┌────────────────────┐ │   │
+│   │  │ WikiSidebar│ │   WikiEditor     │ │   WikiMetadata     │ │   │
+│   │  │ - Sections │ │   + WikiPreview  │ │   - Tags           │ │   │
+│   │  │ - Pages    │ │                  │ │   - Revisions      │ │   │
+│   │  └────────────┘ └──────────────────┘ └────────────────────┘ │   │
+│   │                                                              │   │
+│   │  [📝 Reminders] Button opens:                               │   │
+│   │  ┌──────────────────────────────────────────────────────┐   │   │
+│   │  │              Reminders Drawer (Overlay)               │   │   │
+│   │  │              RemindersApp.vue                         │   │   │
+│   │  └──────────────────────────────────────────────────────┘   │   │
+│   └─────────────────────────────────────────────────────────────┘   │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-## 🧩 Components
+### Event Flow | 事件流
+1. User action → Tauri Command → Database/File update
+2. Database update → Emit event (e.g., `reminders-updated`)
+3. All windows listen → Auto-refresh UI
 
-### Frontend (Vue.js 3 + TypeScript)
+## 🧩 Components | 组件
 
-**Main Window (App.vue)**
+### Frontend (Vue.js 3 + TypeScript) | 前端
+
+**WikiApp.vue (Main Container)**
+- Wiki editor with Markdown/WYSIWYG modes
+- Section-based organization
+- Page revision history
+- Tag management
+- Integrated Reminders panel (drawer)
+
+**RemindersApp.vue**
 - Three-column layout (Sidebar | Content | Detail Panel)
 - Smart lists + Custom categories
-- Real-time filtering and statistics
-- Inline quick-add form
-- Detail edit panel (slides in on double-click)
-- Event listener for real-time updates
+- Evidence/attachment management
+- Real-time sync across windows
 
-**Key Features:**
-- Composition API with `<script setup>`
-- Reactive refs and computed properties
-- Tauri invoke for backend commands
-- Event system for cross-window sync
+**Key Frontend Components:**
+- `WikiEditor.vue` - Markdown/WYSIWYG editor
+- `WikiPreview.vue` - Live Markdown preview
+- `WikiSidebar.vue` - Navigation and sections
+- `WikiMetadata.vue` - Tags and revisions
+- `DocumentImportModal.vue` - Import external documents
+- `TableInsertModal.vue` - Table creation wizard
+- `ReminderInsertModal.vue` - Insert reminders into wiki
 
-### Backend (Rust + Tauri 2.0)
+### Backend (Rust + Tauri 2.0) | 后端
 
-**Tauri Commands (16 total):**
+**Tauri Commands:**
+
 ```rust
-// Reminders
-add_reminder()        // Create new reminder
-get_reminders()       // Fetch all reminders
-get_due_reminders()   // Fetch overdue/due reminders
-toggle_reminder()     // Toggle completion status
-delete_reminder()     // Remove reminder
-update_reminder()     // Edit reminder details ⭐
-broadcast_reminders() // Sync to all windows
+// Reminders (9 commands)
+add_reminder(), get_reminders(), update_reminder()
+delete_reminder(), toggle_reminder()
+get_due_reminders(), broadcast_reminders()
+set_debug_mode(), get_debug_mode()
 
-// GitHub Sync (NEW!)
-get_sync_settings()      // Load sync configuration
-save_sync_settings()     // Save sync configuration
-test_github_connection() // Verify GitHub token
-sync_to_github()         // Upload reminders to GitHub
-sync_from_github()       // Download reminders from GitHub
+// Notifications
+snooze_reminder(), dismiss_notification()
 
-// System
-set_debug_mode()      // Enable/disable debug logs
-get_debug_mode()      // Check debug status
-dismiss_notification()// Close notification
-snooze_reminder()     // Postpone reminder
+// Wiki (12 commands)
+create_wiki_page(), update_wiki_page(), get_wiki_page()
+list_wiki_pages(), delete_wiki_page(), search_wiki_pages()
+list_wiki_revisions(), restore_wiki_revision()
+list_sections(), create_section()
+update_section(), delete_section()
+
+// Evidence (10 commands)
+add_evidence_to_reminder(), get_reminder_evidence()
+get_all_evidence_items(), update_evidence_desc()
+delete_evidence_item(), save_uploaded_file()
+get_evidence_file_path(), open_evidence_file()
+get_mime_type(), format_file_size()
+
+// Sync (5 commands)
+get_sync_settings(), save_sync_settings()
+test_github_connection()
+sync_to_github(), sync_from_github()
 ```
 
-**Services:**
-- Database initialization and migrations
-- GitHub sync service (Gist & Repository methods)
-- Notification checker (30s interval)
-- System tray management
-- Window lifecycle handlers
-- Event broadcasting system
+**Total: 38 Tauri Commands**
 
-### Notification Window (notification.html)
+## 🔄 Data Flow | 数据流
 
-**Standalone Window:**
-- Pure HTML/CSS/JavaScript (no framework)
-- Uses Tauri global API (`window.__TAURI__`)
-- Positioned top-right corner
-- Modal-style overlay
-- Auto-loads on due reminders
-
-**Features:**
-- Real-time event listening
-- Active data fetching on load
-- Auto-close when empty (1.5s delay)
-- Snooze/Complete actions
-- Debug shortcuts (D, R, C, F12)
-
-## 🔄 Data Flow
-
-### Write Operations
+### Write Operations | 写操作
 ```
-User Action → Tauri Command → SQLite Update → Emit Event → All Windows Refresh
+User Action → Tauri Command → SQLite/File Update → Emit Event → All Windows Refresh
 ```
 
-### Real-time Sync
+### Real-time Sync | 实时同步
 ```javascript
 // Backend broadcasts after any change
 app.emit("reminders-updated", &reminders);
@@ -265,102 +300,170 @@ await listen<Reminder[]>('reminders-updated', (event) => {
 });
 ```
 
-### Key Principles
-1. **Local-First**: All operations write to local SQLite immediately
-2. **Privacy-Focused**: All data stays on your device, no cloud sync
-3. **Event-Driven**: UI updates automatically via Tauri events
-4. **No Polling**: Event system eliminates need for data polling
+### Key Principles | 关键原则
+1. **Local-First**: All operations write to local storage immediately | 本地优先
+2. **Privacy-Focused**: All data stays on your device | 隐私优先
+3. **Event-Driven**: UI updates automatically via Tauri events | 事件驱动
+4. **No Polling**: Event system eliminates need for data polling | 无需轮询
 
-## 💾 Database Schema
+## 💾 Data Storage | 数据存储
 
+### SQLite Database (Reminders & Evidence)
 ```sql
 CREATE TABLE reminders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     time TEXT NOT NULL,              -- ISO 8601 datetime string
-    completed INTEGER NOT NULL DEFAULT 0,  -- 0=false, 1=true
-    category TEXT NOT NULL,          -- work, personal, shopping, etc.
-    frequency TEXT NOT NULL,         -- once, daily, weekly, monthly, yearly
+    completed INTEGER NOT NULL DEFAULT 0,
+    category TEXT NOT NULL,
+    frequency TEXT NOT NULL,
+    flagged INTEGER NOT NULL DEFAULT 0,
+    priority INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-)
+);
+
+CREATE TABLE evidence (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reminder_id INTEGER NOT NULL,
+    file_type TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    file_size INTEGER NOT NULL,
+    mime_type TEXT,
+    thumbnail_path TEXT,
+    description TEXT,
+    metadata TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (reminder_id) REFERENCES reminders(id) ON DELETE CASCADE
+);
 ```
 
-### Data Model (TypeScript)
+### File System Storage (Wiki)
+```
+{APP_DATA_DIR}/wiki/
+├── pages/
+│   ├── {page-id-1}.json       # Page data with content
+│   ├── {page-id-2}.json
+│   └── ...
+├── revisions/
+│   ├── {page-id-1}/
+│   │   ├── {revision-id-1}.json
+│   │   └── ...
+│   └── ...
+└── sections.json               # Section hierarchy
+```
+
+### Data Models (TypeScript)
 ```typescript
 interface Reminder {
   id: number;
   title: string;
   description: string;
-  time: string;           // ISO datetime
+  time: string;
   completed: boolean;
-  category: string;       // List assignment
-  frequency: string;      // Repeat pattern
-  priority: number;       // 0-3 (future use)
-  flagged: boolean;       // Star/important flag (future use)
-  tags: string[];         // Hashtags (future use)
+  category: string;
+  frequency: string;
+  priority: number;
+  flagged: boolean;
+  tags: string[];
+}
+
+interface WikiPage {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  notebook: string;
+  section: string;
+  section_id: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+interface Evidence {
+  id: number;
+  reminder_id: number;
+  file_type: string;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  mime_type: string;
+  thumbnail_path: string | null;
+  description: string | null;
+  created_at: string;
 }
 ```
 
-## Configuration
+## Configuration | 配置
 
 ### Debug Logging
-
-Set log level via environment variable:
 ```bash
 RUST_LOG=debug npm run tauri dev
 ```
 
-Or programmatically via Tauri command:
+Or programmatically:
 ```javascript
 await invoke('set_debug_mode', { enabled: true });
 ```
 
-### Database Location
+### Data Location | 数据存储位置
+- **macOS**: `~/Library/Application Support/com.yaozhuang.tauri-vue-app/`
+- **Linux**: `~/.local/share/com.yaozhuang.tauri-vue-app/`
+- **Windows**: `%APPDATA%\com.yaozhuang.tauri-vue-app\`
 
-- **macOS**: `~/Library/Application Support/com.yaozhuang.tauri-vue-app/reminders.db`
-- **Linux**: `~/.local/share/com.yaozhuang.tauri-vue-app/reminders.db`
-- **Windows**: `%APPDATA%\com.yaozhuang.tauri-vue-app\reminders.db`
-
-## 📂 Project Structure
+## 📂 Project Structure | 项目结构
 
 ```text
-tauri-vue-app/
+toolbox/
 ├── src/                          # Vue.js Frontend
-│   ├── App.vue                   # Main application (3-column layout)
+│   ├── AppSimple.vue             # Entry wrapper (renders WikiApp)
+│   ├── App.vue                   # Legacy standalone reminders app
 │   ├── main.ts                   # Vue bootstrap + global error handlers
-│   ├── assets/                   # Images, styles
-│   └── vite-env.d.ts            # TypeScript declarations
+│   ├── components/
+│   │   ├── WikiApp.vue           # Main wiki container + reminders drawer
+│   │   ├── WikiEditor.vue        # Markdown/WYSIWYG editor
+│   │   ├── WikiPreview.vue       # Live Markdown preview
+│   │   ├── WikiSidebar.vue       # Navigation and sections
+│   │   ├── WikiMetadata.vue      # Tags and revision history
+│   │   ├── RemindersApp.vue      # Full reminders application
+│   │   ├── DocumentImportModal.vue
+│   │   ├── TableInsertModal.vue
+│   │   ├── ReminderInsertModal.vue
+│   │   ├── ContextMenu.vue
+│   │   └── SectionNode.vue
+│   ├── composables/
+│   │   └── useWikiStore.ts       # Wiki state management
+│   ├── types/                    # TypeScript type definitions
+│   └── utils/                    # Utility functions
 │
 ├── src-tauri/                    # Rust Backend
 │   ├── src/
-│   │   ├── main.rs              # Entry point
-│   │   ├── lib.rs               # App setup, command registration
-│   │   ├── commands/
-│   │   │   └── mod.rs           # All Tauri commands (11 functions)
+│   │   ├── main.rs               # Entry point
+│   │   ├── lib.rs                # App setup, command registration
+│   │   ├── commands/mod.rs       # Reminder commands
+│   │   ├── wiki_commands.rs      # Wiki & section commands
+│   │   ├── evidence_commands.rs  # Evidence/attachment commands
+│   │   ├── sync_commands.rs      # GitHub sync commands
 │   │   ├── database/
-│   │   │   ├── mod.rs           # Database module exports
-│   │   │   ├── init.rs          # DB initialization & migrations
-│   │   │   └── operations.rs   # CRUD operations
-│   │   ├── models/
-│   │   │   ├── mod.rs           # Model exports
-│   │   │   └── reminder.rs     # Reminder struct
-│   │   ├── notifications/
-│   │   │   └── mod.rs           # Notification service & window
-│   │   └── tray/
-│   │       └── mod.rs           # System tray setup
-│   ├── Cargo.toml               # Rust dependencies
-│   ├── tauri.conf.json          # Tauri configuration
-│   ├── build.rs                 # Build script
-│   └── icons/                   # App icons
+│   │   │   ├── mod.rs            # Database module exports
+│   │   │   ├── init.rs           # DB initialization & migrations
+│   │   │   └── operations.rs     # CRUD operations
+│   │   ├── models/               # Data models
+│   │   ├── notifications/        # Notification service
+│   │   ├── sync/                 # GitHub sync logic
+│   │   └── tray/                 # System tray (desktop only)
+│   ├── Cargo.toml                # Rust dependencies
+│   └── tauri.conf.json           # Tauri configuration
 │
 ├── notification.html             # Notification window (standalone)
 ├── index.html                    # Main window HTML
 ├── package.json                  # Node dependencies
-├── vite.config.ts               # Vite configuration
-├── tsconfig.json                # TypeScript config
-└── README.md                     # This file
+├── vite.config.ts                # Vite configuration
+├── tsconfig.json                 # TypeScript config
+├── README.md                     # This file
+└── SOFTWARE_ARCHITECTURE.md      # Detailed architecture docs
 ```
 
 ## Troubleshooting
@@ -400,38 +503,34 @@ Look for:
 - **Linux**: Modern distribution with GTK3
 - **Windows**: Windows 7+
 
-## 🛠️ Technologies
+## 🛠️ Technologies | 技术栈
 
-### Frontend Stack
+### Frontend Stack | 前端技术栈
 - **Vue.js 3**: Composition API with `<script setup>`
 - **TypeScript**: Type safety and IntelliSense
 - **Vite**: Fast build tool and dev server
-- **CSS**: Custom styling (no UI framework)
+- **Marked**: Markdown parsing
+- **Highlight.js**: Code syntax highlighting
+- **Mermaid**: Diagram rendering
+- **PlantUML**: UML diagram support
+- **CSS**: Custom styling with dark mode support
 
-### Backend Stack
+### Backend Stack | 后端技术栈
 - **Rust**: High-performance native backend
 - **Tauri 2.0**: Modern desktop app framework
 - **SQLite**: Embedded database
 - **SQLx**: Async SQL query executor
 - **Tokio**: Async runtime
 - **Chrono**: Date/time handling
+- **Serde**: Serialization/deserialization
 - **Log/Env_logger**: Structured logging
 
-### Design System
+### Design System | 设计系统
 - **macOS Reminders inspired**: Visual language and interactions
-- **SF Pro font style**: Apple's system font aesthetic
-- **Color palette**: 
+- **Apple-style colors**: 
   - Primary: `#007aff` / `#0a84ff` (light/dark)
   - Text: `#1d1d1f` / `#f5f5f7`
-  - Border: `#e5e5ea` / `#38383a`
 - **Dark mode**: Complete theme with auto-detection
-
-### Removed Technologies
-- ~~Go backend server~~
-- ~~WebSocket (tokio-tungstenite, gorilla/websocket)~~
-- ~~HTTP server~~
-
-*Replaced with Tauri's built-in event system for simpler, more efficient communication.*
 
 ## License
 
@@ -445,19 +544,27 @@ MIT
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open Pull Request
 
-## 🎯 Roadmap / Future Features
+## 🎯 Roadmap / Future Features | 未来计划
 
-- [ ] **Search**: Full-text search across all reminders
-- [ ] **Subtasks**: Nested todo items within reminders
-- [ ] **Tags**: Hashtag support for flexible organization
-- [ ] **Priority**: Visual priority indicators (!, !!, !!!)
-- [ ] **Attachments**: Link files or images to reminders
-- [ ] **Natural language input**: "Remind me tomorrow at 3pm"
-- [ ] **Calendar view**: Month/week view of scheduled items
-- [ ] **Recurring reminders**: Smart scheduling (weekdays, etc.)
-- [ ] **Export/Import**: JSON/CSV data portability
-- [ ] **Templates**: Quick-add from predefined templates
-- [ ] **Widgets**: Desktop widgets for quick overview
+### Wiki Enhancements
+- [ ] Full-text search with FTS5
+- [ ] Bi-directional links between pages
+- [ ] Graph view of connections
+- [ ] Export to PDF/HTML
+- [ ] Image embedding and management
+
+### Reminders Enhancements
+- [ ] Natural language input ("tomorrow at 3pm")
+- [ ] Calendar view (month/week)
+- [ ] Subtasks / Nested items
+- [ ] Templates for common reminders
+- [ ] Export/Import (JSON/CSV)
+
+### General
+- [ ] Multi-language support (i18n)
+- [ ] Theme customization
+- [ ] Desktop widgets
+- [ ] Mobile app improvements
 
 ## 🐛 Known Issues
 
@@ -465,23 +572,34 @@ MIT
 - [ ] No data migration tool yet
 - [ ] Notification window position fixed (not draggable)
 
-## 💡 Tips & Tricks
+## 💡 Tips & Tricks | 使用技巧
 
 1. **Quick Today Entry**: Select Today list, type, press Enter - done!
 2. **Flag Important Items**: Double-click → Toggle flag → Filters to Flagged list
 3. **Keyboard Navigation**: Tab through fields in detail panel
 4. **Debug Mode**: Enable in sidebar to see all events in console
-5. **Empty Lists**: Use custom categories to organize work/life balance
+5. **Wiki from Reminders**: Use the drawer to quickly access reminders while editing wiki
 
 ## 🙏 Acknowledgments
 
-- Inspired by **Apple's macOS Reminders** application
+- Inspired by **Apple's macOS Reminders** and **Notes** applications
 - Built with **Tauri** - The future of desktop apps
 - UI design follows **Apple Human Interface Guidelines**
 
-## 📝 Changelog
+## 📝 Changelog | 更新日志
 
-### v0.2.0 (Current)
+### v0.3.0 (Current)
+- ✨ Added Wiki/Knowledge Base with Markdown support
+- ✨ WYSIWYG editor mode
+- ✨ Mermaid and PlantUML diagram support
+- ✨ Section-based organization for wiki pages
+- ✨ Revision history and restore functionality
+- ✨ Evidence/attachment system for reminders
+- ✨ Document import (Word, etc.)
+- ✨ Integrated Reminders drawer in Wiki
+- 🔄 Restructured app with WikiApp as main entry point
+
+### v0.2.0
 - ✨ Redesigned UI to match macOS Reminders
 - ✨ Added Today list with auto-time feature
 - ✨ Double-click to edit in detail panel
@@ -490,7 +608,6 @@ MIT
 - ✨ Complete dark mode support
 - 🔄 Replaced WebSocket with Tauri events
 - 🗑️ Removed Go backend dependency
-- 🗑️ Removed category column from main view
 
 ### v0.1.0
 - Initial release
@@ -499,17 +616,15 @@ MIT
 - System tray integration
 - SQLite storage
 
-## 📧 Support
+## 📧 Support | 支持
 
 For issues and questions:
-
 - **Enable debug mode** first and check console logs
-- Verify database file exists and is accessible
+- Verify data files exist and are accessible
 - Check system tray for application status
 - Open DevTools (F12) to inspect errors
-- Review this README for common solutions
 
-**Database location:**
-- macOS: `~/Library/Application Support/com.yaozhuang.tauri-vue-app/reminders.db`
-- Linux: `~/.local/share/com.yaozhuang.tauri-vue-app/reminders.db`
-- Windows: `%APPDATA%\com.yaozhuang.tauri-vue-app\reminders.db`
+**Data location | 数据位置:**
+- macOS: `~/Library/Application Support/com.yaozhuang.tauri-vue-app/`
+- Linux: `~/.local/share/com.yaozhuang.tauri-vue-app/`
+- Windows: `%APPDATA%\com.yaozhuang.tauri-vue-app\`
