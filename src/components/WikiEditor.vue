@@ -455,11 +455,12 @@ function handlePaste(e: ClipboardEvent) {
     return;
   }
 
-  // Prefer HTML content to preserve formatting - use turndown if available
+  // For HTML content, convert to plain text to avoid XSS - Milkdown handles
+  // proper markdown conversion in WYSIWYG mode
   const htmlContent = clipboard.getData('text/html');
   if (htmlContent) {
     e.preventDefault();
-    // Insert as plain text to avoid XSS
+    // Insert as plain text for safety in markdown mode
     const plainText = clipboard.getData('text/plain');
     if (plainText) {
       insertContentBlock(plainText.trim());
