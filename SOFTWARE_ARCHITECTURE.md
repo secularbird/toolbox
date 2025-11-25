@@ -14,12 +14,13 @@
 4. [Frontend Architecture | 前端架构](#frontend-architecture--前端架构)
 5. [Backend Architecture | 后端架构](#backend-architecture--后端架构)
 6. [Data Storage | 数据存储](#data-storage--数据存储)
-7. [Inter-Process Communication | 进程间通信](#inter-process-communication--进程间通信)
-8. [Module Interactions | 模块交互](#module-interactions--模块交互)
-9. [Security Considerations | 安全考虑](#security-considerations--安全考虑)
-10. [Performance Optimizations | 性能优化](#performance-optimizations--性能优化)
-11. [Deployment Architecture | 部署架构](#deployment-architecture--部署架构)
-12. [Future Enhancements | 未来增强](#future-enhancements--未来增强)
+7. [Screen Navigation Flow | 画面迁移流程](#screen-navigation-flow--画面迁移流程)
+8. [Inter-Process Communication | 进程间通信](#inter-process-communication--进程间通信)
+9. [Module Interactions | 模块交互](#module-interactions--模块交互)
+10. [Security Considerations | 安全考虑](#security-considerations--安全考虑)
+11. [Performance Optimizations | 性能优化](#performance-optimizations--性能优化)
+12. [Deployment Architecture | 部署架构](#deployment-architecture--部署架构)
+13. [Future Enhancements | 未来增强](#future-enhancements--未来增强)
 
 ---
 
@@ -27,27 +28,25 @@
 
 ### Application Purpose | 应用目的
 
-Toolbox is a unified desktop application that combines three essential productivity tools:
-- **Reminders**: Task and reminder management with notifications
-- **Wiki**: Personal knowledge base with markdown support
-- **Disk Scanner**: Storage analysis and visualization tool
+Toolbox is a unified desktop application that combines two essential productivity tools:
+- **Wiki/Knowledge Base**: Personal knowledge management with Markdown, diagrams, and revision history
+- **Reminders**: Task and reminder management with notifications and file attachments
 
-Toolbox 是一个统一的桌面应用程序，整合了三个核心生产力工具：
-- **提醒应用**：任务和提醒管理，带通知功能
-- **知识库**：支持 Markdown 的个人知识管理系统
-- **磁盘扫描器**：存储分析和可视化工具
+Toolbox 是一个统一的桌面应用程序，整合了两个核心生产力工具：
+- **知识库**：支持 Markdown、图表和版本历史的个人知识管理系统
+- **提醒应用**：任务和提醒管理，带通知和文件附件功能
 
 ### Design Principles | 设计原则
 
 1. **Local-First**: All data stored locally, no cloud dependency
-2. **Privacy-Focused**: No data collection or external communication
+2. **Privacy-Focused**: No data collection or external communication (optional GitHub sync)
 3. **Native Performance**: Rust backend for optimal speed
 4. **Cross-Platform**: Supports Windows, macOS, Linux, and Android
 5. **Event-Driven**: Real-time updates across all windows
 6. **Modular Design**: Independent features with shared infrastructure
 
 1. **本地优先**：所有数据本地存储，无云依赖
-2. **隐私保护**：无数据收集或外部通信
+2. **隐私保护**：无数据收集或外部通信（可选 GitHub 同步）
 3. **原生性能**：Rust 后端提供最佳速度
 4. **跨平台**：支持 Windows、macOS、Linux 和 Android
 5. **事件驱动**：所有窗口实时更新
@@ -64,31 +63,32 @@ Toolbox 是一个统一的桌面应用程序，整合了三个核心生产力工
 │                     Presentation Layer                        │
 │          (Vue 3 Components + HTML/CSS/TypeScript)             │
 ├───────────────────────────────────────────────────────────────┤
-│  RemindersApp  │    WikiApp     │    DiskScanner             │
-│  + Components  │  + Components  │    + Components            │
-└────────┬──────────────┬───────────────────┬───────────────────┘
-         │              │                   │
-         │    Tauri IPC (invoke/emit/listen)                    
-         │              │                   │
-┌────────┴──────────────┴───────────────────┴───────────────────┐
+│     WikiApp (Main Container)      │      RemindersApp        │
+│  + WikiEditor, WikiSidebar        │    (Drawer Overlay)      │
+│  + WikiPreview, WikiMetadata      │  + Detail Panel          │
+└────────┬─────────────────────────────────────┬────────────────┘
+         │                                     │
+         │       Tauri IPC (invoke/emit/listen)                
+         │                                     │
+┌────────┴─────────────────────────────────────┴────────────────┐
 │                   Application Layer (Rust)                    │
 │                      Tauri Commands API                       │
 ├───────────────────────────────────────────────────────────────┤
-│  Reminder     │    Wiki         │   Disk Scanner             │
-│  Commands     │    Commands     │   Commands                 │
-│  (11 cmds)    │    (8 cmds)     │   (4 cmds)                 │
-└────────┬──────────────┬───────────────────┬───────────────────┘
-         │              │                   │
-┌────────┴──────────────┴───────────────────┴───────────────────┐
+│  Reminder     │    Wiki         │   Evidence    │   Sync     │
+│  Commands     │    Commands     │   Commands    │  Commands  │
+│  (9 cmds)     │    (12 cmds)    │   (10 cmds)   │  (5 cmds)  │
+└────────┬──────────────┬───────────────┬──────────────┬────────┘
+         │              │               │              │
+┌────────┴──────────────┴───────────────┴──────────────┴────────┐
 │                    Domain/Business Logic                      │
 │                  (Models + Operations)                        │
 ├───────────────────────────────────────────────────────────────┤
-│  Reminder      │   WikiPage      │   DiskItem                │
-│  Operations    │   File Ops      │   Filesystem Ops          │
-│  + Validation  │   + Revisions   │   + Size Calc             │
-└────────┬──────────────┬───────────────────┬───────────────────┘
-         │              │                   │
-┌────────┴──────────────┴───────────────────┴───────────────────┐
+│  Reminder      │   WikiPage      │   Evidence    │   Sync    │
+│  Operations    │   File Ops      │   File Ops    │  GitHub   │
+│  + Validation  │   + Revisions   │   + MIME      │  API      │
+└────────┬──────────────┬───────────────┬──────────────┬────────┘
+         │              │               │              │
+┌────────┴──────────────┴───────────────┴──────────────┴────────┐
 │                 Infrastructure Layer                          │
 ├───────────────────────────────────────────────────────────────┤
 │  SQLite DB     │  File System    │  System APIs              │
@@ -168,54 +168,73 @@ Toolbox 是一个统一的桌面应用程序，整合了三个核心生产力工
 ### Component Tree | 组件树
 
 ```
-App.vue (or AppSimple.vue)
-│
-├── Navigation Tabs
-│   ├─ 📝 Reminders
-│   ├─ 📚 Wiki
-│   └─ 💾 Disk Scanner
-│
-├── RemindersApp (when active)
-│   ├── Sidebar
-│   │   ├── SmartLists
-│   │   ├── CustomCategories
-│   │   └── DebugToggle
-│   ├── ReminderList
-│   │   └── ReminderItem (multiple)
-│   └── DetailPanel (conditional)
-│       ├── TitleEditor
-│       ├── NotesEditor
-│       ├── DateTimePicker
-│       ├── CategorySelector
-│       ├── EvidenceList
-│       └── ActionButtons
-│
-├── WikiApp (when active)
-│   ├── WikiSidebar
-│   │   ├── NotebookFilter
-│   │   ├── TagFilter
-│   │   └── PageList
-│   ├── WikiEditor
-│   │   ├── ToolBar
-│   │   └── MarkdownTextArea
-│   ├── WikiPreview
-│   │   └── RenderedMarkdown
-│   └── WikiMetadata
-│       ├── TitleInput
-│       ├── TagsInput
-│       ├── NotebookSelector
-│       └── RevisionHistory
-│
-└── DiskScanner (when active)
-    ├── InputArea
-    │   ├── PathInput
-    │   ├── QuickAccessButtons
-    │   └── DepthControl
-    └── ResultsArea
-        └── DiskItem (recursive)
-            ├── FileIcon
-            ├── SizeBar
-            └── Children (DiskItem[])
+main.ts
+└── AppSimple.vue (Entry Point)
+    │
+    └── WikiApp.vue (Main Container)
+        │
+        ├── TopBar
+        │   ├── Title Chip (📚 Wiki)
+        │   ├── Action Buttons (New Page, Import, Save)
+        │   ├── Reminders Button (Opens Drawer)
+        │   └── Status Text
+        │
+        ├── WikiSidebar.vue
+        │   ├── Search Input
+        │   ├── Sections Tree (SectionNode recursive)
+        │   │   └── Section Items with context menu
+        │   ├── Tag Filter
+        │   └── Page List
+        │       └── Page Items (with context menu)
+        │
+        ├── Wiki Editor Panel
+        │   ├── Title Row
+        │   │   ├── Title Input
+        │   │   ├── Metadata (updated time)
+        │   │   └── Breadcrumbs
+        │   ├── WikiEditor.vue
+        │   │   ├── Toolbar (formatting buttons)
+        │   │   ├── Mode Toggle (Markdown/WYSIWYG)
+        │   │   └── CodeMirror-style Editor
+        │   └── WikiPreview.vue (in split mode)
+        │       └── Rendered Markdown with Mermaid/PlantUML
+        │
+        ├── WikiMetadata.vue (Right Panel)
+        │   ├── Tags Input
+        │   ├── Timestamps (created, updated)
+        │   ├── Revision History List
+        │   └── Delete Button
+        │
+        ├── Modals
+        │   ├── DocumentImportModal.vue
+        │   ├── TableInsertModal.vue
+        │   └── ReminderInsertModal.vue
+        │
+        └── Reminders Drawer (Overlay)
+            └── RemindersApp.vue
+                ├── Sidebar
+                │   ├── Smart Lists (Today, Scheduled, Flagged, All)
+                │   ├── Custom Categories
+                │   ├── Debug Toggle
+                │   └── Sync Settings Button
+                ├── Reminder List
+                │   ├── Quick Add Form
+                │   └── Reminder Items
+                └── Detail Panel (Slide-in)
+                    ├── Checkbox + Title
+                    ├── Notes Editor
+                    ├── Date/Time Picker
+                    ├── Frequency Selector
+                    ├── Category Selector
+                    ├── Flag Toggle
+                    ├── Attachments Section
+                    │   ├── Upload Button
+                    │   └── Evidence List
+                    └── Action Buttons (Save, Delete)
+
+Notification Window (Separate)
+└── notification.html
+    └── Standalone HTML/JS (no Vue)
 ```
 
 ### State Management | 状态管理
@@ -225,25 +244,21 @@ App.vue (or AppSimple.vue)
 Each feature uses Vue 3 Composition API with dedicated composables:
 
 ```typescript
-// Reminders State
+// Wiki State (useWiki composable)
+const {
+  pages, currentPage, isLoading, error,
+  loadPages, loadPage, createPage, updatePage, deletePage,
+  searchPages, listRevisions, restoreRevision,
+  sections, loadSections, createSection, updateSection, deleteSection
+} = useWiki();
+
+// Reminders State (in component)
 const reminders = ref<Reminder[]>([]);
 const activeList = ref<string>('today');
 const editingReminder = ref<Reminder | null>(null);
-const debugMode = ref<boolean>(false);
-
-// Wiki State  
-const {
-  pages, currentPage, isLoading, error,
-  loadPages, createPage, updatePage, deletePage,
-  searchPages, listRevisions, restoreRevision
-} = useWiki();
-
-// Disk Scanner State
-const path = ref<string>('');
-const result = ref<DiskItem | null>(null);
-const scanning = ref<boolean>(false);
-const limitDepth = ref<boolean>(true);
-const maxDepth = ref<number>(3);
+const evidenceList = ref<Evidence[]>([]);
+const debugMode = ref<boolean>(true);
+const syncSettings = ref<SyncSettings>({...});
 ```
 
 #### Reactive Data Flow | 响应式数据流
@@ -280,7 +295,7 @@ Template Re-render (automatic)
 
 ### Command Structure | 命令结构
 
-#### Reminders Commands (11) | 提醒命令
+#### Reminders Commands (9) | 提醒命令
 
 ```rust
 // CRUD Operations
@@ -294,51 +309,69 @@ toggle_reminder(id) -> Result<()>
 get_due_reminders() -> Vec<Reminder>
 broadcast_reminders(app_handle) -> Result<()>
 
-// Notification Actions
-snooze_reminder(id, minutes) -> Result<()>
-dismiss_notification(window) -> Result<()>
-
 // Debug Controls
 set_debug_mode(enabled: bool)
 get_debug_mode() -> bool
 ```
 
-#### Wiki Commands (8) | 知识库命令
+#### Notification Commands (2) | 通知命令
 
 ```rust
-create_wiki_page(title, content, tags, notebook, section)
-update_wiki_page(id, updates)
+snooze_reminder(id, minutes) -> Result<()>
+dismiss_notification(window) -> Result<()>
+```
+
+#### Wiki Commands (12) | 知识库命令
+
+```rust
+// Page Operations
+create_wiki_page(title, content, tags, section_id) -> WikiPage
+update_wiki_page(id, title, content, tags, section_id) -> WikiPage
 get_wiki_page(id) -> WikiPage
 list_wiki_pages() -> Vec<WikiPageList>
-delete_wiki_page(id)
+delete_wiki_page(id) -> Result<()>
 search_wiki_pages(query) -> Vec<WikiPageList>
+
+// Revision Operations
 list_wiki_revisions(page_id) -> Vec<WikiRevisionMeta>
-restore_wiki_revision(page_id, revision_id)
+restore_wiki_revision(page_id, revision_id) -> WikiPage
+
+// Section Operations
+list_sections() -> Vec<Section>
+create_section(name, parent_id) -> Section
+update_section(id, name) -> Section
+delete_section(id) -> Result<()>
 ```
 
-#### Disk Scanner Commands (4) | 磁盘扫描命令
+#### Evidence Commands (10) | 附件命令
 
 ```rust
-scan_directory(path, max_depth) -> DiskItem
-get_home_directory() -> String
-get_system_roots() -> Vec<String>
-format_bytes(bytes) -> String
-```
-
-#### Evidence Commands (10) | 证据附件命令
-
-```rust
-add_evidence_to_reminder(reminder_id, file_info)
-get_reminder_evidence(reminder_id) -> Vec<EvidenceItem>
-get_all_evidence_items() -> Vec<EvidenceItem>
-update_evidence_desc(id, description)
-delete_evidence_item(id)
-save_uploaded_file(file_data, filename, reminder_id) -> String
+// File Upload/Management
+save_uploaded_file(file_name, file_data) -> String
 get_evidence_file_path(id) -> String
-open_evidence_file(id)
-get_mime_type(filename) -> String
+open_evidence_file(file_path) -> Result<()>
+get_mime_type(file_path) -> String
 format_file_size(bytes) -> String
+
+// Database Operations
+add_evidence_to_reminder(reminder_id, file_type, file_path, file_name, ...) -> Evidence
+get_reminder_evidence(reminder_id) -> Vec<Evidence>
+get_all_evidence_items() -> Vec<Evidence>
+update_evidence_desc(evidence_id, description) -> Result<()>
+delete_evidence_item(evidence_id) -> Result<()>
 ```
+
+#### Sync Commands (5) | 同步命令
+
+```rust
+get_sync_settings() -> SyncSettings
+save_sync_settings(settings) -> Result<()>
+test_github_connection(token) -> bool
+sync_to_github() -> String  // Returns URL
+sync_from_github() -> i32   // Returns count
+```
+
+**Total: 38 Tauri Commands**
 
 ### Service Layer | 服务层
 
@@ -486,6 +519,146 @@ CREATE INDEX idx_evidence_reminder ON evidence(reminder_id);
 - **Linux**: `~/.local/share/com.yaozhuang.tauri-vue-app/`
 - **Windows**: `%APPDATA%\com.yaozhuang.tauri-vue-app\`
 - **Android**: App-specific sandbox directory
+
+---
+
+## Screen Navigation Flow | 画面迁移流程
+
+### Application Entry Flow | 应用入口流程
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Application Startup                          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  main.ts                                                        │
+│  ├── createApp(AppSimple.vue)                                  │
+│  ├── Setup error handlers                                       │
+│  └── mount("#app")                                              │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  AppSimple.vue (Entry Wrapper)                                  │
+│  └── Renders WikiApp.vue as main content                       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  WikiApp.vue (Main Application Shell)                           │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                      Top Bar                              │   │
+│  │  [📚 Wiki] [+ New Page] [📄 Import] [📝 Reminders] [Save]│   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+│  ┌─────────┐ ┌─────────────────────────────┐ ┌───────────────┐ │
+│  │ Sidebar │ │        Editor Area          │ │   Metadata    │ │
+│  │         │ │                              │ │               │ │
+│  │Sections │ │  ┌──────────────────────┐   │ │ Tags          │ │
+│  │ ∟ Pages │ │  │   Title Input        │   │ │ Created       │ │
+│  │         │ │  ├──────────────────────┤   │ │ Updated       │ │
+│  │ Search  │ │  │   WikiEditor         │   │ │               │ │
+│  │         │ │  │   (Markdown/WYSIWYG) │   │ │ Revisions     │ │
+│  │ Tags    │ │  │                      │   │ │ ∟ Restore     │ │
+│  │         │ │  ├──────────────────────┤   │ │               │ │
+│  │         │ │  │   WikiPreview        │   │ │ [Delete]      │ │
+│  │         │ │  │   (Live Render)      │   │ │               │ │
+│  │         │ │  └──────────────────────┘   │ │               │ │
+│  └─────────┘ └─────────────────────────────┘ └───────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Reminders Drawer Flow | 提醒抽屉流程
+
+```
+User clicks [📝 Reminders] button
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Reminders Overlay (Full-screen backdrop)                       │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │                   Reminders Drawer                        │  │
+│  │  ┌─────────────────────────────────────────────────────┐ │  │
+│  │  │ Header: 📝 Reminders                           [✕] │ │  │
+│  │  └─────────────────────────────────────────────────────┘ │  │
+│  │                                                           │  │
+│  │  ┌─────────┐ ┌─────────────────────┐ ┌───────────────┐  │  │
+│  │  │Sidebar  │ │   Reminder List     │ │ Detail Panel  │  │  │
+│  │  │         │ │                     │ │ (slide-in)    │  │  │
+│  │  │Smart    │ │ [Quick Add Form]    │ │               │  │  │
+│  │  │ ∟Today  │ │                     │ │ Title         │  │  │
+│  │  │ ∟Sched. │ │ ○ Reminder 1        │ │ Notes         │  │  │
+│  │  │ ∟Flagged│ │ ○ Reminder 2        │ │ Date/Time     │  │  │
+│  │  │ ∟All    │ │ ✓ Reminder 3 ✓     │ │ Repeat        │  │  │
+│  │  │         │ │                     │ │ Category      │  │  │
+│  │  │My Lists │ │                     │ │ Flag          │  │  │
+│  │  │ ∟Work   │ │                     │ │               │  │  │
+│  │  │ ∟Pers.  │ │                     │ │ Attachments   │  │  │
+│  │  │ ∟...    │ │                     │ │ [+ Add File]  │  │  │
+│  │  │         │ │                     │ │               │  │  │
+│  │  │[+ Cat]  │ │                     │ │ [Save] [Del]  │  │  │
+│  │  │[Debug]  │ │                     │ │               │  │  │
+│  │  │[Sync]   │ │                     │ │               │  │  │
+│  │  └─────────┘ └─────────────────────┘ └───────────────┘  │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+Click outside or [✕] → Close drawer → Return to WikiApp
+```
+
+### Modal Flow | 模态框流程
+
+```
+WikiApp Actions → Modal Windows:
+
+[📄 Import] Button
+    │
+    └──► DocumentImportModal
+         ├── Drag & Drop Zone
+         ├── File Preview
+         └── [Import] → Creates new wiki page
+
+[Insert Table] (from toolbar)
+    │
+    └──► TableInsertModal
+         ├── Row/Column selectors
+         ├── Table Preview
+         └── [Insert] → Inserts markdown table
+
+[Insert Reminder] (from toolbar)
+    │
+    └──► ReminderInsertModal
+         ├── Reminder form
+         └── [Create] → Creates reminder + inserts reference
+```
+
+### User Interaction States | 用户交互状态
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     State Machine                                │
+└─────────────────────────────────────────────────────────────────┘
+
+Wiki Editor States:
+┌──────────┐    select page    ┌──────────┐    edit content    ┌──────────┐
+│  Empty   │ ─────────────────►│ Viewing  │ ──────────────────►│ Editing  │
+│  State   │                   │  Page    │                    │  (dirty) │
+└──────────┘                   └──────────┘                    └──────────┘
+     │                              │                               │
+     │ create page                  │ delete page                   │ autosave/save
+     └──────────────────────────────┴───────────────────────────────┘
+
+Reminder Detail Panel States:
+┌──────────┐    double-click    ┌──────────┐    save/close    ┌──────────┐
+│  Hidden  │ ──────────────────►│  Visible │ ────────────────►│  Hidden  │
+│          │◄──────────────────│ (editing)│                   │          │
+└──────────┘    click away      └──────────┘                   └──────────┘
+```
 
 ---
 
@@ -643,7 +816,7 @@ User clicks "New Page"
     ↓
 User types content
     ↓
-Auto-save timer triggers
+Auto-save timer triggers (1.5s debounce)
     ↓
 invoke('create_wiki_page', page_data)
     ↓
@@ -680,32 +853,20 @@ Return success
 [Frontend] Refresh revision list
 ```
 
-### Disk Scanner Flow | 磁盘扫描流程
+#### Section Management Flow | 分类管理流程
 
 ```
-User enters path
+User right-clicks section → Context menu
     ↓
-Clicks "Scan" button
+[Add Section] / [Rename] / [Delete]
     ↓
-invoke('scan_directory', path, max_depth)
+invoke('create_section' / 'update_section' / 'delete_section')
     ↓
-[Backend] Recursive filesystem traversal
+[Backend] Update sections.json
     ↓
-Calculate sizes (bottom-up)
+Return updated section list
     ↓
-Sort by size
-    ↓
-Return tree structure
-    ↓
-[Frontend] Receive DiskItem tree
-    ↓
-Render with DiskItem component (recursive)
-    ↓
-User clicks folder to expand
-    ↓
-Vue toggles expanded state
-    ↓
-Children render (lazy)
+[Frontend] Refresh sidebar
 ```
 
 ---
@@ -721,7 +882,7 @@ Children render (lazy)
 
 ### Data Security | 数据安全
 
-1. **Local Storage Only**: No network transmission
+1. **Local Storage Only**: No network transmission (except optional GitHub sync)
 2. **File Permissions**: Respect OS-level permissions
 3. **SQL Injection Prevention**: SQLx prepared statements
 4. **Path Traversal Protection**: Validate all file paths
@@ -729,7 +890,7 @@ Children render (lazy)
 ### Privacy Protection | 隐私保护
 
 1. **No Telemetry**: Zero data collection
-2. **No External Connections**: Fully offline capable
+2. **Optional Cloud Sync**: GitHub sync is user-controlled
 3. **Local Database**: SQLite with no remote access
 4. **User Data Control**: Export/delete functionality
 
@@ -762,7 +923,7 @@ fn validate_path(path: &str) -> Result<PathBuf> {
 
 1. **Virtual Scrolling**: For large lists (planned)
 2. **Lazy Loading**: Components loaded on demand
-3. **Debounced Input**: Auto-save with debouncing
+3. **Debounced Input**: Auto-save with debouncing (1.5s)
 4. **Computed Properties**: Efficient reactive calculations
 5. **Keep-Alive**: Cache component state when switching views
 
@@ -880,15 +1041,6 @@ Create platform-specific installers
 - [ ] Export to PDF/HTML
 - [ ] Collaborative editing (future)
 
-#### Disk Scanner Enhancements
-- [ ] File type breakdown (pie charts)
-- [ ] Duplicate file detection
-- [ ] File deletion from app
-- [ ] Export reports
-- [ ] Scheduled scans
-- [ ] Historical comparisons
-- [ ] Custom filters
-
 ### Architectural Improvements | 架构改进
 
 1. **Incremental Updates**: Delta events instead of full state
@@ -911,20 +1063,19 @@ Create platform-specific installers
 
 ### Command Reference Quick Index | 命令快速索引
 
-#### Reminders (11 commands)
+#### Reminders (9 commands)
 - add_reminder, get_reminders, update_reminder, delete_reminder
 - toggle_reminder, get_due_reminders, broadcast_reminders
-- snooze_reminder, dismiss_notification
 - set_debug_mode, get_debug_mode
 
-#### Wiki (8 commands)
+#### Notifications (2 commands)
+- snooze_reminder, dismiss_notification
+
+#### Wiki (12 commands)
 - create_wiki_page, update_wiki_page, get_wiki_page, list_wiki_pages
 - delete_wiki_page, search_wiki_pages
 - list_wiki_revisions, restore_wiki_revision
-
-#### Disk Scanner (4 commands)
-- scan_directory, get_home_directory
-- get_system_roots, format_bytes
+- list_sections, create_section, update_section, delete_section
 
 #### Evidence (10 commands)
 - add_evidence_to_reminder, get_reminder_evidence, get_all_evidence_items
@@ -932,36 +1083,46 @@ Create platform-specific installers
 - save_uploaded_file, get_evidence_file_path, open_evidence_file
 - get_mime_type, format_file_size
 
-**Total: 33 Tauri Commands**
+#### Sync (5 commands)
+- get_sync_settings, save_sync_settings
+- test_github_connection
+- sync_to_github, sync_from_github
+
+**Total: 38 Tauri Commands**
 
 ### File Structure Reference | 文件结构参考
 
 ```
 toolbox/
 ├── src/                          # Frontend source
-│   ├── App.vue                   # Full-featured app
-│   ├── AppSimple.vue             # Navigation wrapper
+│   ├── App.vue                   # Legacy standalone reminders app
+│   ├── AppSimple.vue             # Entry wrapper (renders WikiApp)
 │   ├── main.ts                   # Entry point
 │   ├── components/
-│   │   ├── RemindersApp.vue      # Reminders container
-│   │   ├── WikiApp.vue           # Wiki container
-│   │   ├── WikiEditor.vue        # Markdown editor
-│   │   ├── WikiPreview.vue       # Preview renderer
-│   │   ├── WikiSidebar.vue       # Wiki navigation
-│   │   ├── WikiMetadata.vue      # Page metadata
-│   │   ├── DiskScanner.vue       # Scanner UI
-│   │   └── DiskItem.vue          # File/folder item
+│   │   ├── WikiApp.vue           # Main wiki container + reminders drawer
+│   │   ├── WikiEditor.vue        # Markdown/WYSIWYG editor
+│   │   ├── WikiPreview.vue       # Live preview renderer
+│   │   ├── WikiSidebar.vue       # Navigation and sections
+│   │   ├── WikiMetadata.vue      # Tags and revision history
+│   │   ├── RemindersApp.vue      # Full reminders application
+│   │   ├── DocumentImportModal.vue # Document import
+│   │   ├── TableInsertModal.vue  # Table creation wizard
+│   │   ├── ReminderInsertModal.vue # Reminder insertion
+│   │   ├── ContextMenu.vue       # Right-click context menu
+│   │   └── SectionNode.vue       # Recursive section tree node
 │   ├── composables/
 │   │   └── useWikiStore.ts       # Wiki state management
-│   └── assets/                   # Static assets
+│   ├── types/                    # TypeScript type definitions
+│   └── utils/                    # Utility functions
 │
 ├── src-tauri/                    # Backend source
 │   ├── src/
 │   │   ├── main.rs               # Entry point
-│   │   ├── lib.rs                # App setup
+│   │   ├── lib.rs                # App setup, command registration
 │   │   ├── commands/
 │   │   │   └── mod.rs            # Reminder commands
 │   │   ├── database/
+│   │   │   ├── mod.rs            # Module exports
 │   │   │   ├── init.rs           # DB initialization
 │   │   │   └── operations.rs    # CRUD operations
 │   │   ├── models/
@@ -970,10 +1131,12 @@ toolbox/
 │   │   ├── notifications/
 │   │   │   └── mod.rs            # Notification service
 │   │   ├── tray/
-│   │   │   └── mod.rs            # System tray
-│   │   ├── disk_scanner.rs       # Disk scanner logic
+│   │   │   └── mod.rs            # System tray (desktop only)
+│   │   ├── sync/
+│   │   │   └── mod.rs            # GitHub sync logic
 │   │   ├── wiki_commands.rs      # Wiki commands
-│   │   └── evidence_commands.rs  # Evidence commands
+│   │   ├── evidence_commands.rs  # Evidence commands
+│   │   └── sync_commands.rs      # Sync commands
 │   ├── Cargo.toml                # Rust dependencies
 │   ├── tauri.conf.json           # Tauri configuration
 │   └── build.rs                  # Build script
@@ -1002,8 +1165,8 @@ toolbox/
 
 ## Document Maintenance | 文档维护
 
-**Last Updated**: 2024-11-21  
-**Version**: 1.0.0  
+**Last Updated**: 2024-11-25  
+**Version**: 1.1.0  
 **Maintainer**: Toolbox Development Team
 
 This document should be updated whenever:
