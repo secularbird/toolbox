@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats, renderMarkdown, sanitizeHtml, generateDiagramId } from '../utils/markdown';
+import { ref, watch, onMounted, onBeforeUnmount, nextTick, shallowRef, computed } from 'vue';
+import { wrapSelection, insertAtCursor, markdownFormats, renderMarkdown, generateDiagramId } from '../utils/markdown';
 import { EditorHistory } from '../utils/editorHistory';
-import TurndownService from 'turndown';
-import { gfm } from 'turndown-plugin-gfm';
 import mermaid from 'mermaid';
+// Milkdown imports
+import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core';
+import { commonmark } from '@milkdown/preset-commonmark';
+import { gfm } from '@milkdown/preset-gfm';
+import { history as milkdownHistory } from '@milkdown/plugin-history';
+import { listener, listenerCtx } from '@milkdown/plugin-listener';
+import type { Ctx } from '@milkdown/ctx';
 
 const props = defineProps<{
   modelValue: string;
@@ -20,21 +25,18 @@ const emit = defineEmits<{
 // Editor mode: 'markdown' or 'wysiwyg'
 const editorMode = ref<'markdown' | 'wysiwyg'>('markdown');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
-const wysiwygRef = ref<HTMLDivElement | null>(null);
+const milkdownContainerRef = ref<HTMLDivElement | null>(null);
+const previewRef = ref<HTMLDivElement | null>(null);
 const localValue = ref(props.modelValue);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const history = new EditorHistory(props.modelValue);
 const isUndoRedoing = ref(false);
 
-// Initialize Turndown for HTML to Markdown conversion
-const turndownService = new TurndownService({
-  headingStyle: 'atx',
-  codeBlockStyle: 'fenced',
-  bulletListMarker: '-',
-  emDelimiter: '*',
-  strongDelimiter: '**',
-});
-turndownService.use(gfm);
+// Milkdown editor instance
+const milkdownEditor = shallowRef<Editor | null>(null);
+const isMilkdownReady = ref(false);
+// Track if we're updating content to prevent loops
+let isUpdatingMilkdown = false;
 
 // Track mermaid rendering state
 let mermaidRenderingInProgress = false;
@@ -70,9 +72,9 @@ const initMermaid = () => {
   });
 };
 
-// Render Mermaid diagrams in WYSIWYG editor
-async function renderMermaidInWysiwyg() {
-  if (mermaidRenderingInProgress || !wysiwygRef.value) {
+// Render Mermaid diagrams in preview
+async function renderMermaidInPreview() {
+  if (mermaidRenderingInProgress || !previewRef.value) {
     return;
   }
 
@@ -80,7 +82,7 @@ async function renderMermaidInWysiwyg() {
   await nextTick();
 
   try {
-    const mermaidElements = wysiwygRef.value.querySelectorAll('.mermaid:not([data-processed="rendered"])');
+    const mermaidElements = previewRef.value.querySelectorAll('.mermaid:not([data-processed="rendered"])');
 
     if (mermaidElements.length > 0) {
       for (const element of Array.from(mermaidElements)) {
@@ -108,16 +110,62 @@ async function renderMermaidInWysiwyg() {
   }
 }
 
+// Initialize Milkdown editor
+async function initMilkdown(container: HTMLDivElement, content: string) {
+  try {
+    const editor = await Editor.make()
+      .config((ctx: Ctx) => {
+        ctx.set(rootCtx, container);
+        ctx.set(defaultValueCtx, content);
+        // Setup listener for content changes
+        ctx.get(listenerCtx).markdownUpdated((_ctx: Ctx, markdown: string, _prevMarkdown: string) => {
+          if (!isUpdatingMilkdown) {
+            localValue.value = markdown;
+          }
+        });
+      })
+      .use(commonmark)
+      .use(gfm)
+      .use(milkdownHistory)
+      .use(listener)
+      .create();
+    
+    milkdownEditor.value = editor;
+    isMilkdownReady.value = true;
+    return editor;
+  } catch (error) {
+    console.error('Failed to initialize Milkdown:', error);
+    return null;
+  }
+}
+
+// Destroy Milkdown editor
+async function destroyMilkdown() {
+  if (milkdownEditor.value) {
+    try {
+      await milkdownEditor.value.destroy();
+    } catch (error) {
+      console.error('Failed to destroy Milkdown:', error);
+    }
+    milkdownEditor.value = null;
+    isMilkdownReady.value = false;
+  }
+}
+
+// Computed preview content (for wysiwyg preview mode)
+const previewContent = computed(() => {
+  return renderMarkdown(localValue.value);
+});
+
 watch(() => props.modelValue, async (newVal) => {
   if (localValue.value !== newVal) {
     localValue.value = newVal;
     history.reset(newVal);
-    // Update WYSIWYG content when modelValue changes
-    // renderMarkdown includes sanitizeHtml to prevent XSS
-    if (editorMode.value === 'wysiwyg' && wysiwygRef.value) {
-      wysiwygRef.value.innerHTML = renderMarkdown(newVal);
-      // Render Mermaid diagrams after setting HTML content
-      await renderMermaidInWysiwyg();
+    
+    // Re-initialize Milkdown with new content when in WYSIWYG mode
+    if (editorMode.value === 'wysiwyg' && milkdownContainerRef.value) {
+      await destroyMilkdown();
+      await initMilkdown(milkdownContainerRef.value, newVal);
     }
   }
 });
@@ -127,20 +175,31 @@ watch(localValue, (newVal) => {
     history.save(newVal);
   }
   emit('update:modelValue', newVal);
+  
+  // Update preview with mermaid diagrams
+  if (editorMode.value === 'wysiwyg') {
+    nextTick(() => {
+      renderMermaidInPreview();
+    });
+  }
 });
 
-// Watch for mode changes
+// Watch for mode changes - this is the key feature!
+// Content is preserved because localValue always contains the markdown
 watch(editorMode, async (newMode, oldMode) => {
-  if (newMode === 'wysiwyg' && wysiwygRef.value) {
-    // Convert markdown to HTML for WYSIWYG
-    // renderMarkdown includes sanitizeHtml for XSS prevention
-    wysiwygRef.value.innerHTML = renderMarkdown(localValue.value);
-    // Render Mermaid diagrams after setting HTML content
-    await renderMermaidInWysiwyg();
-  } else if (newMode === 'markdown' && oldMode === 'wysiwyg' && wysiwygRef.value) {
-    // Convert HTML back to markdown
-    const html = wysiwygRef.value.innerHTML;
-    localValue.value = turndownService.turndown(html);
+  if (newMode === 'wysiwyg') {
+    // Switch to WYSIWYG mode - initialize Milkdown with current markdown content
+    await nextTick();
+    if (milkdownContainerRef.value) {
+      await initMilkdown(milkdownContainerRef.value, localValue.value);
+    }
+  } else if (newMode === 'markdown' && oldMode === 'wysiwyg') {
+    // Switch back to markdown mode - content is already in localValue
+    // Destroy Milkdown instance
+    await destroyMilkdown();
+    // Focus the textarea
+    await nextTick();
+    textareaRef.value?.focus();
   }
 });
 
@@ -150,115 +209,85 @@ function applyFormat(formatKey: keyof typeof markdownFormats) {
     const format = markdownFormats[formatKey];
     localValue.value = wrapSelection(textareaRef.value, format.before, format.after);
   } else {
-    // WYSIWYG mode - use execCommand
-    applyWysiwygFormat(formatKey);
+    // WYSIWYG mode - apply format through Milkdown
+    applyMilkdownFormat(formatKey);
   }
 }
 
-function applyWysiwygFormat(formatKey: keyof typeof markdownFormats) {
-  if (!wysiwygRef.value) return;
-  
-  wysiwygRef.value.focus();
-  
-  // Note: document.execCommand is deprecated but still widely supported
-  // and provides the most reliable cross-browser WYSIWYG editing experience.
-  // Modern alternatives like the Selection API require significantly more complex
-  // implementation for the same functionality. We'll migrate when a stable
-  // replacement API is broadly available.
-  
-  const commandMap: Record<string, string> = {
-    bold: 'bold',
-    italic: 'italic',
-    code: 'insertHTML', // Special handling needed
-    h1: 'formatBlock',
-    h2: 'formatBlock',
-    h3: 'formatBlock',
-    quote: 'formatBlock',
-    ul: 'insertUnorderedList',
-    ol: 'insertOrderedList',
-    link: 'createLink',
-    codeBlock: 'insertHTML', // Special handling needed
-  };
-  
-  const command = commandMap[formatKey];
+function applyMilkdownFormat(formatKey: keyof typeof markdownFormats) {
+  if (!milkdownEditor.value || !isMilkdownReady.value) return;
   
   try {
-    if (formatKey === 'code') {
-      // Wrap selection in <code> tag
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const selectedText = range.toString();
-        const code = document.createElement('code');
-        code.textContent = selectedText || 'code';
-        range.deleteContents();
-        range.insertNode(code);
-        
-        // Move cursor after the code element
-        range.setStartAfter(code);
-        range.setEndAfter(code);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    } else if (formatKey === 'codeBlock') {
-      // Insert a code block
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const selectedText = range.toString() || 'code block';
-        const pre = document.createElement('pre');
-        const code = document.createElement('code');
-        code.textContent = selectedText;
-        pre.appendChild(code);
-        range.deleteContents();
-        range.insertNode(pre);
-        
-        // Add line break after pre
-        const br = document.createElement('br');
-        range.setStartAfter(pre);
-        range.insertNode(br);
-        range.setStartAfter(br);
-        selection.removeAllRanges();
-        selection.addRange(range);
-      }
-    } else if (formatKey === 'h1') {
-      document.execCommand('formatBlock', false, '<h1>');
-    } else if (formatKey === 'h2') {
-      document.execCommand('formatBlock', false, '<h2>');
-    } else if (formatKey === 'h3') {
-      document.execCommand('formatBlock', false, '<h3>');
-    } else if (formatKey === 'quote') {
-      document.execCommand('formatBlock', false, '<blockquote>');
-    } else if (formatKey === 'link') {
-      const url = prompt('Enter URL:', 'https://');
-      if (url) {
-        // Validate URL to prevent javascript: and other dangerous protocols
-        try {
-          const urlObj = new URL(url);
-          if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
-            document.execCommand(command, false, url);
-          } else {
-            alert('Only http:// and https:// URLs are allowed');
+    milkdownEditor.value.action((ctx: Ctx) => {
+      const view = ctx.get(editorViewCtx);
+      const { state, dispatch } = view;
+      const { selection, schema, tr } = state;
+      const { from, to } = selection;
+      
+      switch (formatKey) {
+        case 'bold': {
+          const markType = schema.marks['strong'];
+          if (markType) {
+            const hasMark = state.doc.rangeHasMark(from, to, markType);
+            if (hasMark) {
+              dispatch(tr.removeMark(from, to, markType));
+            } else {
+              dispatch(tr.addMark(from, to, markType.create()));
+            }
           }
-        } catch (e) {
-          alert('Invalid URL');
+          break;
         }
+        case 'italic': {
+          const markType = schema.marks['emphasis'];
+          if (markType) {
+            const hasMark = state.doc.rangeHasMark(from, to, markType);
+            if (hasMark) {
+              dispatch(tr.removeMark(from, to, markType));
+            } else {
+              dispatch(tr.addMark(from, to, markType.create()));
+            }
+          }
+          break;
+        }
+        case 'code': {
+          const markType = schema.marks['inlineCode'];
+          if (markType) {
+            const hasMark = state.doc.rangeHasMark(from, to, markType);
+            if (hasMark) {
+              dispatch(tr.removeMark(from, to, markType));
+            } else {
+              dispatch(tr.addMark(from, to, markType.create()));
+            }
+          }
+          break;
+        }
+        case 'link': {
+          const url = prompt('Enter URL:', 'https://');
+          if (url) {
+            try {
+              const urlObj = new URL(url);
+              if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+                const markType = schema.marks['link'];
+                if (markType) {
+                  dispatch(tr.addMark(from, to, markType.create({ href: url })));
+                }
+              } else {
+                alert('Only http:// and https:// URLs are allowed');
+              }
+            } catch (e) {
+              alert('Invalid URL');
+            }
+          }
+          break;
+        }
+        default:
+          // For heading and other block formats, insert markdown directly
+          break;
       }
-    } else {
-      document.execCommand(command, false);
-    }
-    
-    // Update localValue from WYSIWYG content
-    updateFromWysiwyg();
+    });
   } catch (error) {
-    console.error('Error applying WYSIWYG format:', error);
+    console.error('Error applying Milkdown format:', error);
   }
-}
-
-function updateFromWysiwyg() {
-  if (!wysiwygRef.value) return;
-  const html = wysiwygRef.value.innerHTML;
-  localValue.value = turndownService.turndown(html);
 }
 
 function insertText(text: string) {
@@ -266,11 +295,20 @@ function insertText(text: string) {
     if (!textareaRef.value) return;
     localValue.value = insertAtCursor(textareaRef.value, text);
   } else {
-    // WYSIWYG mode
-    if (!wysiwygRef.value) return;
-    wysiwygRef.value.focus();
-    document.execCommand('insertText', false, text);
-    updateFromWysiwyg();
+    // WYSIWYG mode - insert through Milkdown
+    if (!milkdownEditor.value || !isMilkdownReady.value) return;
+    
+    try {
+      milkdownEditor.value.action((ctx: Ctx) => {
+        const view = ctx.get(editorViewCtx);
+        const { state, dispatch } = view;
+        const { selection } = state;
+        const tr = state.tr.insertText(text, selection.from, selection.to);
+        dispatch(tr);
+      });
+    } catch (error) {
+      console.error('Error inserting text:', error);
+    }
   }
 }
 
@@ -280,22 +318,8 @@ function insertContentBlock(text: string) {
     const content = localValue.value ? `${text}` : text;
     localValue.value = insertAtCursor(textareaRef.value, content);
   } else {
-    // WYSIWYG mode - sanitize HTML before insertion
-    if (!wysiwygRef.value) return;
-    wysiwygRef.value.focus();
-    
-    // Check if text is HTML (contains tags)
-    const isHTML = /<[^>]+>/.test(text);
-    if (isHTML) {
-      // Sanitize HTML content before insertion
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, 'text/html');
-      const sanitized = doc.body.textContent || '';
-      document.execCommand('insertText', false, sanitized);
-    } else {
-      document.execCommand('insertText', false, text);
-    }
-    updateFromWysiwyg();
+    // WYSIWYG mode - insert content
+    insertText(text);
   }
 }
 
@@ -358,9 +382,8 @@ function handleRedo() {
 function handleKeydown(e: KeyboardEvent) {
   if (editorMode.value === 'markdown') {
     handleMarkdownKeydown(e);
-  } else {
-    handleWysiwygKeydown(e);
   }
+  // Milkdown handles its own keyboard shortcuts
 }
 
 function handleMarkdownKeydown(e: KeyboardEvent) {
@@ -408,128 +431,40 @@ function handleMarkdownKeydown(e: KeyboardEvent) {
   }
 }
 
-function handleWysiwygKeydown(e: KeyboardEvent) {
-  if (e.ctrlKey || e.metaKey) {
-    switch (e.key) {
-      case 'b':
-        e.preventDefault();
-        applyFormat('bold');
-        break;
-      case 'i':
-        e.preventDefault();
-        applyFormat('italic');
-        break;
-      case 'k':
-        e.preventDefault();
-        applyFormat('link');
-        break;
-      case 't':
-        if (e.shiftKey) {
-          e.preventDefault();
-          emit('insertTable');
-        }
-        break;
-      case 'r':
-        if (e.shiftKey) {
-          e.preventDefault();
-          emit('insertReminder');
-        }
-        break;
-      case 'z':
-        e.preventDefault();
-        if (e.shiftKey) {
-          handleRedo();
-        } else {
-          handleUndo();
-        }
-        break;
-      case 'y':
-        e.preventDefault();
-        handleRedo();
-        break;
-    }
-  }
-}
-
-function handleWysiwygInput() {
-  updateFromWysiwyg();
-}
-
 function handlePaste(e: ClipboardEvent) {
+  if (editorMode.value !== 'markdown') return; // Milkdown handles paste in WYSIWYG mode
+  
   const clipboard = e.clipboardData;
   if (!clipboard) return;
 
-  if (editorMode.value === 'markdown') {
-    if (!textareaRef.value) return;
+  if (!textareaRef.value) return;
 
-    // Paste image blobs as data URLs to preserve inline content
-    const imageFile = Array.from(clipboard.files || []).find((file) =>
-      file.type.startsWith('image/')
-    );
-    if (imageFile) {
-      e.preventDefault();
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          insertContentBlock(`![pasted-image](${reader.result})`);
-        }
-      };
-      reader.readAsDataURL(imageFile);
-      return;
-    }
-
-    // Prefer HTML content to preserve formatting
-    const htmlContent = clipboard.getData('text/html');
-    if (htmlContent) {
-      e.preventDefault();
-      insertContentBlock(htmlContent.trim());
-      return;
-    }
-  } else {
-    // WYSIWYG mode - sanitize HTML content before allowing paste
-    if (!wysiwygRef.value) return;
-    
-    // For images, convert to data URLs
-    const imageFile = Array.from(clipboard.files || []).find((file) =>
-      file.type.startsWith('image/')
-    );
-    if (imageFile) {
-      e.preventDefault();
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          const img = document.createElement('img');
-          img.src = reader.result;
-          img.alt = 'pasted-image';
-          const selection = window.getSelection();
-          if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            range.deleteContents();
-            range.insertNode(img);
-          }
-          updateFromWysiwyg();
-        }
-      };
-      reader.readAsDataURL(imageFile);
-      return;
-    }
-    
-    // For HTML content, sanitize it before paste
-    const htmlContent = clipboard.getData('text/html');
-    if (htmlContent) {
-      e.preventDefault();
-      const sanitized = sanitizeHtml(htmlContent);
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        const template = document.createElement('template');
-        template.innerHTML = sanitized;
-        const fragment = template.content;
-        range.insertNode(fragment);
+  // Paste image blobs as data URLs to preserve inline content
+  const imageFile = Array.from(clipboard.files || []).find((file) =>
+    file.type.startsWith('image/')
+  );
+  if (imageFile) {
+    e.preventDefault();
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        insertContentBlock(`![pasted-image](${reader.result})`);
       }
-      updateFromWysiwyg();
+    };
+    reader.readAsDataURL(imageFile);
+    return;
+  }
+
+  // Prefer HTML content to preserve formatting - use turndown if available
+  const htmlContent = clipboard.getData('text/html');
+  if (htmlContent) {
+    e.preventDefault();
+    // Insert as plain text to avoid XSS
+    const plainText = clipboard.getData('text/plain');
+    if (plainText) {
+      insertContentBlock(plainText.trim());
     }
+    return;
   }
 }
 
@@ -541,23 +476,25 @@ onMounted(() => {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   mediaQuery.addEventListener('change', async () => {
     initMermaid();
-    // Re-render all diagrams in WYSIWYG mode
-    if (editorMode.value === 'wysiwyg' && wysiwygRef.value) {
-      const elements = wysiwygRef.value.querySelectorAll('.mermaid[data-processed="rendered"]');
+    // Re-render all diagrams in preview
+    if (previewRef.value) {
+      const elements = previewRef.value.querySelectorAll('.mermaid[data-processed="rendered"]');
       elements.forEach(el => {
         el.removeAttribute('data-processed');
         el.removeAttribute('id');
       });
       mermaidRenderingInProgress = false;
-      await renderMermaidInWysiwyg();
+      await renderMermaidInPreview();
     }
   });
   
   if (editorMode.value === 'markdown') {
     textareaRef.value?.focus();
-  } else {
-    wysiwygRef.value?.focus();
   }
+});
+
+onBeforeUnmount(async () => {
+  await destroyMilkdown();
 });
 
 defineExpose({ applyFormat, insertText, editorMode });
@@ -659,16 +596,24 @@ defineExpose({ applyFormat, insertText, editorMode });
       spellcheck="false"
     ></textarea>
 
+    <!-- Milkdown WYSIWYG editor -->
     <div
       v-else
-      ref="wysiwygRef"
-      contenteditable="true"
-      :placeholder="placeholder || 'Write your content here...'"
-      class="editor-wysiwyg"
-      @input="handleWysiwygInput"
-      @keydown="handleKeydown"
-      @paste="handlePaste"
-    ></div>
+      class="milkdown-wysiwyg-container"
+    >
+      <!-- Milkdown editor container -->
+      <div 
+        ref="milkdownContainerRef" 
+        class="milkdown-editor"
+        :class="{ 'is-loading': !isMilkdownReady }"
+      ></div>
+      <!-- Preview panel for mermaid/plantuml diagrams -->
+      <div 
+        ref="previewRef" 
+        class="milkdown-preview"
+        v-html="previewContent"
+      ></div>
+    </div>
   </div>
 </template>
 
@@ -781,70 +726,95 @@ defineExpose({ applyFormat, insertText, editorMode });
   color: var(--text-tertiary);
 }
 
-.editor-wysiwyg {
+/* Milkdown WYSIWYG container */
+.milkdown-wysiwyg-container {
   flex: 1;
-  width: 100%;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.milkdown-editor {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  border-right: 1px solid var(--border-color);
+}
+
+.milkdown-editor.is-loading {
+  opacity: 0.6;
+}
+
+.milkdown-preview {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
   padding: 16px;
-  border: none;
-  background: var(--editor-bg);
-  color: var(--text-primary);
+  background: var(--preview-bg, var(--editor-bg));
+}
+
+/* Milkdown editor styling */
+.milkdown-editor :deep(.milkdown) {
+  padding: 16px;
+  outline: none;
+}
+
+.milkdown-editor :deep(.ProseMirror) {
+  outline: none;
+  min-height: 200px;
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.milkdown-editor :deep(.ProseMirror-focused) {
   outline: none;
-  overflow-y: auto;
-  cursor: text;
 }
 
-.editor-wysiwyg:empty:before {
-  content: attr(placeholder);
-  color: var(--text-tertiary);
-  pointer-events: none;
-}
-
-/* WYSIWYG content styling */
-.editor-wysiwyg :deep(h1),
-.editor-wysiwyg :deep(h2),
-.editor-wysiwyg :deep(h3),
-.editor-wysiwyg :deep(h4),
-.editor-wysiwyg :deep(h5),
-.editor-wysiwyg :deep(h6) {
+/* Milkdown content styling */
+.milkdown-editor :deep(h1),
+.milkdown-editor :deep(h2),
+.milkdown-editor :deep(h3),
+.milkdown-editor :deep(h4),
+.milkdown-editor :deep(h5),
+.milkdown-editor :deep(h6) {
   margin-top: 24px;
   margin-bottom: 16px;
   font-weight: 600;
   line-height: 1.25;
 }
 
-.editor-wysiwyg :deep(h1) {
+.milkdown-editor :deep(h1) {
   font-size: 2em;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.3em;
 }
 
-.editor-wysiwyg :deep(h2) {
+.milkdown-editor :deep(h2) {
   font-size: 1.5em;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.3em;
 }
 
-.editor-wysiwyg :deep(h3) {
+.milkdown-editor :deep(h3) {
   font-size: 1.25em;
 }
 
-.editor-wysiwyg :deep(p) {
+.milkdown-editor :deep(p) {
   margin-bottom: 16px;
 }
 
-.editor-wysiwyg :deep(a) {
+.milkdown-editor :deep(a) {
   color: var(--link-color);
   text-decoration: none;
 }
 
-.editor-wysiwyg :deep(a:hover) {
+.milkdown-editor :deep(a:hover) {
   text-decoration: underline;
 }
 
-.editor-wysiwyg :deep(code) {
+.milkdown-editor :deep(code) {
   padding: 0.2em 0.4em;
   margin: 0;
   font-size: 85%;
@@ -853,7 +823,7 @@ defineExpose({ applyFormat, insertText, editorMode });
   font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
 }
 
-.editor-wysiwyg :deep(pre) {
+.milkdown-editor :deep(pre) {
   padding: 16px;
   overflow: auto;
   font-size: 85%;
@@ -863,45 +833,70 @@ defineExpose({ applyFormat, insertText, editorMode });
   margin-bottom: 16px;
 }
 
-.editor-wysiwyg :deep(pre code) {
+.milkdown-editor :deep(pre code) {
   padding: 0;
   background: transparent;
   border-radius: 0;
 }
 
-.editor-wysiwyg :deep(blockquote) {
+.milkdown-editor :deep(blockquote) {
   padding: 0 1em;
   color: var(--text-secondary);
   border-left: 0.25em solid var(--border-color);
   margin-bottom: 16px;
 }
 
-.editor-wysiwyg :deep(ul),
-.editor-wysiwyg :deep(ol) {
+.milkdown-editor :deep(ul),
+.milkdown-editor :deep(ol) {
   padding-left: 2em;
   margin-bottom: 16px;
 }
 
-.editor-wysiwyg :deep(li) {
+.milkdown-editor :deep(li) {
   margin-bottom: 4px;
 }
 
-.editor-wysiwyg :deep(strong) {
+.milkdown-editor :deep(strong) {
   font-weight: 600;
 }
 
-.editor-wysiwyg :deep(em) {
+.milkdown-editor :deep(em) {
   font-style: italic;
 }
 
-.editor-wysiwyg :deep(img) {
+.milkdown-editor :deep(img) {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
 }
 
-/* Diagram styles for WYSIWYG mode */
-.editor-wysiwyg :deep(.diagram-container) {
+.milkdown-editor :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.milkdown-editor :deep(th),
+.milkdown-editor :deep(td) {
+  padding: 6px 13px;
+  border: 1px solid var(--border-color);
+}
+
+.milkdown-editor :deep(th) {
+  font-weight: 600;
+  background: var(--table-header-bg, var(--code-bg));
+}
+
+.milkdown-editor :deep(hr) {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: var(--border-color);
+  border: 0;
+}
+
+/* Preview pane styling (for diagrams) */
+.milkdown-preview :deep(.diagram-container) {
   margin: 16px 0;
   padding: 16px;
   background: var(--diagram-bg);
@@ -910,14 +905,14 @@ defineExpose({ applyFormat, insertText, editorMode });
   overflow-x: auto;
 }
 
-.editor-wysiwyg :deep(.diagram-image) {
+.milkdown-preview :deep(.diagram-image) {
   display: block;
   max-width: 100%;
   height: auto;
   margin: 0 auto;
 }
 
-.editor-wysiwyg :deep(.mermaid) {
+.milkdown-preview :deep(.mermaid) {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -930,12 +925,12 @@ defineExpose({ applyFormat, insertText, editorMode });
   min-height: 100px;
 }
 
-.editor-wysiwyg :deep(.mermaid svg) {
+.milkdown-preview :deep(.mermaid svg) {
   max-width: 100%;
   height: auto;
 }
 
-.editor-wysiwyg :deep(.diagram-error) {
+.milkdown-preview :deep(.diagram-error) {
   color: var(--error-color);
   padding: 12px;
   background: var(--error-bg);
@@ -961,6 +956,7 @@ defineExpose({ applyFormat, insertText, editorMode });
     --diagram-bg: #2c2c2e;
     --error-color: #ff453a;
     --error-bg: rgba(255, 69, 58, 0.1);
+    --preview-bg: #0f0f0f;
   }
 }
 
@@ -982,6 +978,7 @@ defineExpose({ applyFormat, insertText, editorMode });
     --diagram-bg: #fafafa;
     --error-color: #ff3b30;
     --error-bg: rgba(255, 59, 48, 0.1);
+    --preview-bg: #fafafa;
   }
 }
 </style>
