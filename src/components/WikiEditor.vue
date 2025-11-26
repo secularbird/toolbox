@@ -410,6 +410,178 @@ function insertContentBlock(text: string) {
   }
 }
 
+// Diagram insertion state
+const showDiagramMenu = ref(false);
+const diagramMenuRef = ref<HTMLDivElement | null>(null);
+
+// Close diagram menu when clicking outside
+function handleClickOutside(event: MouseEvent) {
+  if (diagramMenuRef.value && !diagramMenuRef.value.contains(event.target as Node)) {
+    showDiagramMenu.value = false;
+  }
+}
+
+// Insert Mermaid diagram template
+function insertMermaidDiagram(type: string) {
+  let template = '';
+  
+  switch (type) {
+    case 'flowchart':
+      template = `\`\`\`mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action 1]
+    B -->|No| D[Action 2]
+    C --> E[End]
+    D --> E
+\`\`\``;
+      break;
+    case 'sequence':
+      template = `\`\`\`mermaid
+sequenceDiagram
+    participant A as User
+    participant B as System
+    A->>B: Request
+    B-->>A: Response
+\`\`\``;
+      break;
+    case 'class':
+      template = `\`\`\`mermaid
+classDiagram
+    class MyClass {
+        +String name
+        +int id
+        +method()
+    }
+\`\`\``;
+      break;
+    case 'state':
+      template = `\`\`\`mermaid
+stateDiagram-v2
+    [*] --> State1
+    State1 --> State2: Event
+    State2 --> [*]
+\`\`\``;
+      break;
+    case 'er':
+      template = `\`\`\`mermaid
+erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ LINE-ITEM : contains
+\`\`\``;
+      break;
+    case 'gantt':
+      template = `\`\`\`mermaid
+gantt
+    title Project Timeline
+    dateFormat YYYY-MM-DD
+    section Phase 1
+    Task 1 :a1, 2024-01-01, 7d
+    Task 2 :a2, after a1, 5d
+\`\`\``;
+      break;
+    case 'pie':
+      template = `\`\`\`mermaid
+pie title Distribution
+    "Category A" : 40
+    "Category B" : 30
+    "Category C" : 30
+\`\`\``;
+      break;
+    default:
+      template = `\`\`\`mermaid
+graph TD
+    A[Start] --> B[End]
+\`\`\``;
+  }
+  
+  insertContentBlock('\n' + template + '\n');
+  showDiagramMenu.value = false;
+}
+
+// Insert PlantUML diagram template
+function insertPlantUMLDiagram(type: string) {
+  let template = '';
+  
+  switch (type) {
+    case 'sequence':
+      template = `\`\`\`plantuml
+@startuml
+actor User
+participant "System" as S
+
+User -> S: Request
+S --> User: Response
+@enduml
+\`\`\``;
+      break;
+    case 'class':
+      template = `\`\`\`plantuml
+@startuml
+class MyClass {
+  +String name
+  +int id
+  +method()
+}
+@enduml
+\`\`\``;
+      break;
+    case 'usecase':
+      template = `\`\`\`plantuml
+@startuml
+actor User
+usecase "Use Case" as UC
+User --> UC
+@enduml
+\`\`\``;
+      break;
+    case 'activity':
+      template = `\`\`\`plantuml
+@startuml
+start
+:Step 1;
+if (Condition?) then (yes)
+  :Step 2a;
+else (no)
+  :Step 2b;
+endif
+stop
+@enduml
+\`\`\``;
+      break;
+    case 'component':
+      template = `\`\`\`plantuml
+@startuml
+package "My Package" {
+  [Component A]
+  [Component B]
+}
+[Component A] --> [Component B]
+@enduml
+\`\`\``;
+      break;
+    case 'state':
+      template = `\`\`\`plantuml
+@startuml
+[*] --> State1
+State1 --> State2 : event
+State2 --> [*]
+@enduml
+\`\`\``;
+      break;
+    default:
+      template = `\`\`\`plantuml
+@startuml
+Alice -> Bob: Hello
+Bob --> Alice: Hi
+@enduml
+\`\`\``;
+  }
+  
+  insertContentBlock('\n' + template + '\n');
+  showDiagramMenu.value = false;
+}
+
 async function handleFileSelect(e: Event) {
   const input = e.target as HTMLInputElement;
   if (!input.files || !input.files[0]) return;
@@ -566,10 +738,14 @@ onMounted(async () => {
       await initMilkdown(milkdownContainerRef.value, localValue.value);
     }
   }
+  // Add click outside listener for diagram menu
+  document.addEventListener('click', handleClickOutside);
 });
 
 onBeforeUnmount(async () => {
   await destroyMilkdown();
+  // Remove click outside listener
+  document.removeEventListener('click', handleClickOutside);
 });
 
 defineExpose({ applyFormat, insertText, editorMode });
@@ -630,6 +806,39 @@ defineExpose({ applyFormat, insertText, editorMode });
     </div>
 
       <div class="toolbar-divider"></div>
+
+      <!-- Diagram insertion menu -->
+      <div class="toolbar-group diagram-menu-container" ref="diagramMenuRef">
+        <button 
+          @click.stop="showDiagramMenu = !showDiagramMenu" 
+          title="Insert Diagram" 
+          class="toolbar-btn diagram-btn"
+        >
+          📊 Diagram ▾
+        </button>
+        <div v-if="showDiagramMenu" class="diagram-dropdown">
+          <div class="diagram-section">
+            <div class="diagram-section-title">🌊 Mermaid Diagrams</div>
+            <button @click="insertMermaidDiagram('flowchart')" class="diagram-option">Flowchart</button>
+            <button @click="insertMermaidDiagram('sequence')" class="diagram-option">Sequence Diagram</button>
+            <button @click="insertMermaidDiagram('class')" class="diagram-option">Class Diagram</button>
+            <button @click="insertMermaidDiagram('state')" class="diagram-option">State Diagram</button>
+            <button @click="insertMermaidDiagram('er')" class="diagram-option">ER Diagram</button>
+            <button @click="insertMermaidDiagram('gantt')" class="diagram-option">Gantt Chart</button>
+            <button @click="insertMermaidDiagram('pie')" class="diagram-option">Pie Chart</button>
+          </div>
+          <div class="diagram-section-divider"></div>
+          <div class="diagram-section">
+            <div class="diagram-section-title">🌱 PlantUML Diagrams</div>
+            <button @click="insertPlantUMLDiagram('sequence')" class="diagram-option">Sequence Diagram</button>
+            <button @click="insertPlantUMLDiagram('class')" class="diagram-option">Class Diagram</button>
+            <button @click="insertPlantUMLDiagram('usecase')" class="diagram-option">Use Case Diagram</button>
+            <button @click="insertPlantUMLDiagram('activity')" class="diagram-option">Activity Diagram</button>
+            <button @click="insertPlantUMLDiagram('component')" class="diagram-option">Component Diagram</button>
+            <button @click="insertPlantUMLDiagram('state')" class="diagram-option">State Diagram</button>
+          </div>
+        </div>
+      </div>
 
       <div class="toolbar-group">
         <input
@@ -1089,6 +1298,67 @@ defineExpose({ applyFormat, insertText, editorMode });
   margin: 24px 0;
   background-color: var(--border-color);
   border: 0;
+}
+
+/* Diagram menu styles */
+.diagram-menu-container {
+  position: relative;
+}
+
+.diagram-btn {
+  min-width: 100px;
+}
+
+.diagram-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.diagram-section {
+  padding: 8px;
+}
+
+.diagram-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.diagram-section-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.diagram-option {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 13px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.diagram-option:hover {
+  background: var(--btn-hover-bg);
 }
 
 /* Dark mode */
