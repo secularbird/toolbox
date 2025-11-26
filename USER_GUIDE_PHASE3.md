@@ -79,9 +79,6 @@ Tables are inserted as markdown:
 - `Ctrl+Shift+Z` / `Cmd+Shift+Z` - Redo
 - `Ctrl+Y` / `Cmd+Y` - Redo (alternative)
 
-### General
-- `F12` - Open Developer Tools
-
 ### Page Management
 - **Right-Click** on page in sidebar - Context menu (Open, Rename, Delete)
 - Use toolbar buttons for Save, Import, etc.

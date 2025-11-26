@@ -103,16 +103,14 @@ function formatDate(timestamp: number): string {
         <div class="shortcut-row"><span>Cmd/Ctrl + B</span><span>Bold</span></div>
         <div class="shortcut-row"><span>Cmd/Ctrl + I</span><span>Italic</span></div>
         <div class="shortcut-row"><span>Cmd/Ctrl + K</span><span>Link</span></div>
-        <div class="shortcut-row"><span>Tab</span><span>Indent</span></div>
+        <div class="shortcut-row"><span>Tab</span><span>Indent (2 spaces)</span></div>
         <div class="shortcut-group-label">Insert</div>
         <div class="shortcut-row"><span>Cmd/Ctrl + Shift + T</span><span>Table</span></div>
         <div class="shortcut-row"><span>Cmd/Ctrl + Shift + R</span><span>Reminder</span></div>
         <div class="shortcut-group-label">History</div>
         <div class="shortcut-row"><span>Cmd/Ctrl + Z</span><span>Undo</span></div>
         <div class="shortcut-row"><span>Cmd/Ctrl + Shift + Z</span><span>Redo</span></div>
-        <div class="shortcut-row"><span>Cmd/Ctrl + Y</span><span>Redo</span></div>
-        <div class="shortcut-group-label">General</div>
-        <div class="shortcut-row"><span>F12</span><span>DevTools</span></div>
+        <div class="shortcut-row"><span>Cmd/Ctrl + Y</span><span>Redo (alt)</span></div>
       </div>
     </div>
 

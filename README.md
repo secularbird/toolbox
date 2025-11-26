@@ -154,13 +154,10 @@ The built application will be in `src-tauri/target/release/`.
 - **Ctrl/Cmd + Z**: Undo
 - **Ctrl/Cmd + Shift + Z**: Redo
 - **Ctrl/Cmd + Y**: Redo (alternative)
-- **Tab**: Indent
+- **Tab**: Indent (2 spaces)
 
 #### Reminders
 - **Enter**: Quick add reminder
-
-#### General
-- **F12**: Open DevTools
 
 ## 🏗️ Architecture | 架构
 
