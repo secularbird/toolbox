@@ -55,25 +55,23 @@ async fn check_due_reminders(pool: &SqlitePool) -> Result<usize, sqlx::Error> {
     let now = Local::now();
     let reminder_window_end = now + ChronoDuration::hours(REMINDER_WINDOW_HOURS);
     
-    // Format times for SQLite comparison
-    let now_str = now.format("%Y-%m-%dT%H:%M").to_string();
-    let window_end_str = reminder_window_end.format("%Y-%m-%dT%H:%M").to_string();
+    // Format time for SQLite comparison (include seconds for precision)
+    let window_end_str = reminder_window_end.format("%Y-%m-%dT%H:%M:%S").to_string();
     
-    debug!("Checking reminders between {} and {}", now_str, window_end_str);
+    debug!("Checking reminders due up to {}", window_end_str);
     
     // Count reminders that are:
     // 1. Not completed
-    // 2. Due time is within the next hour (from now to now + 1 hour)
+    // 2. Due time is in the past (overdue) OR within the next hour (upcoming)
+    //    This means: time <= (now + 1 hour)
     let count: (i64,) = sqlx::query_as(
         r#"
         SELECT COUNT(*)
         FROM reminders
         WHERE completed = 0
-          AND time >= ?
           AND time <= ?
         "#
     )
-    .bind(&now_str)
     .bind(&window_end_str)
     .fetch_one(pool)
     .await?;
