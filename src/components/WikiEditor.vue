@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick, shallowRef } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats } from '../utils/markdown';
+import { wrapSelection, insertAtCursor, markdownFormats, extractMarkdownTables } from '../utils/markdown';
 import { EditorHistory } from '../utils/editorHistory';
 // Milkdown imports
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core';
@@ -29,6 +29,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string];
   'insertTable': [];
   'insertReminder': [];
+  'editTable': [tableIndex: number];
 }>();
 
 // Editor mode: 'markdown' or 'wysiwyg'
@@ -96,6 +97,32 @@ function updateTableToolbarState() {
   } catch {
     showTableToolbar.value = false;
     lastInTableState = false;
+  }
+}
+
+// Handle click on WYSIWYG editor to detect table clicks for editing
+function handleWysiwygClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  const table = target.closest('table');
+  
+  if (table && milkdownContainerRef.value?.contains(table)) {
+    // Find the index of this table in the content
+    const allTables = milkdownContainerRef.value.querySelectorAll('table');
+    let tableIndex = -1;
+    
+    allTables.forEach((t, index) => {
+      if (t === table) {
+        tableIndex = index;
+      }
+    });
+    
+    if (tableIndex >= 0) {
+      // Verify this matches a table in the markdown content
+      const markdownTables = extractMarkdownTables(localValue.value);
+      if (tableIndex < markdownTables.length) {
+        emit('editTable', tableIndex);
+      }
+    }
   }
 }
 
@@ -709,6 +736,7 @@ defineExpose({ applyFormat, insertText, editorMode });
         ref="milkdownContainerRef" 
         class="milkdown-editor"
         :class="{ 'is-loading': !isMilkdownReady }"
+        @dblclick="handleWysiwygClick"
       ></div>
     </div>
   </div>
@@ -1012,6 +1040,33 @@ defineExpose({ applyFormat, insertText, editorMode });
   border-collapse: collapse;
   width: 100%;
   margin-bottom: 16px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.1s;
+  position: relative;
+}
+
+.milkdown-editor :deep(table:hover) {
+  box-shadow: 0 0 0 2px var(--primary-color, #007aff);
+  transform: translateY(-1px);
+}
+
+.milkdown-editor :deep(table::after) {
+  content: '✏️ Double-click to edit';
+  position: absolute;
+  top: -24px;
+  right: 0;
+  font-size: 11px;
+  color: var(--primary-color, #007aff);
+  background: var(--table-header-bg, #f5f5f7);
+  padding: 2px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.milkdown-editor :deep(table:hover::after) {
+  opacity: 1;
 }
 
 .milkdown-editor :deep(th),
