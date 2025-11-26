@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick, shallowRef } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats } from '../utils/markdown';
+import { wrapSelection, insertAtCursor, markdownFormats, extractMarkdownTables } from '../utils/markdown';
 import { EditorHistory } from '../utils/editorHistory';
 // Milkdown imports
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core';
@@ -29,6 +29,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: string];
   'insertTable': [];
   'insertReminder': [];
+  'editTable': [tableIndex: number];
 }>();
 
 // Editor mode: 'markdown' or 'wysiwyg'
@@ -96,6 +97,32 @@ function updateTableToolbarState() {
   } catch {
     showTableToolbar.value = false;
     lastInTableState = false;
+  }
+}
+
+// Handle click on WYSIWYG editor to detect table clicks for editing
+function handleWysiwygClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  const table = target.closest('table');
+  
+  if (table && milkdownContainerRef.value?.contains(table)) {
+    // Find the index of this table in the content
+    const allTables = milkdownContainerRef.value.querySelectorAll('table');
+    let tableIndex = -1;
+    
+    allTables.forEach((t, index) => {
+      if (t === table) {
+        tableIndex = index;
+      }
+    });
+    
+    if (tableIndex >= 0) {
+      // Verify this matches a table in the markdown content
+      const markdownTables = extractMarkdownTables(localValue.value);
+      if (tableIndex < markdownTables.length) {
+        emit('editTable', tableIndex);
+      }
+    }
   }
 }
 
@@ -709,6 +736,7 @@ defineExpose({ applyFormat, insertText, editorMode });
         ref="milkdownContainerRef" 
         class="milkdown-editor"
         :class="{ 'is-loading': !isMilkdownReady }"
+        @dblclick="handleWysiwygClick"
       ></div>
     </div>
   </div>
@@ -1012,6 +1040,36 @@ defineExpose({ applyFormat, insertText, editorMode });
   border-collapse: collapse;
   width: 100%;
   margin-bottom: 16px;
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s);
+  position: relative;
+}
+
+.milkdown-editor :deep(table:hover) {
+  box-shadow: 0 0 0 2px var(--primary-color, #007aff);
+  transform: translateY(-1px);
+}
+
+/* Decorative tooltip - accessibility note: screen readers will announce the table content,
+   and keyboard users can interact with table cells directly. The double-click action
+   provides an enhanced editing experience but is not the only way to edit tables. */
+.milkdown-editor :deep(table::after) {
+  content: '✏️ Double-click to edit';
+  position: absolute;
+  top: -24px;
+  right: 0;
+  font-size: 11px;
+  color: var(--primary-color, #007aff);
+  background: var(--table-header-bg, #f5f5f7);
+  padding: 2px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 0.2s);
+  pointer-events: none;
+}
+
+.milkdown-editor :deep(table:hover::after) {
+  opacity: 1;
 }
 
 .milkdown-editor :deep(th),
@@ -1054,6 +1112,7 @@ defineExpose({ applyFormat, insertText, editorMode });
     --preview-bg: #0f0f0f;
     --danger-color: #ff453a;
     --danger-bg: rgba(255, 69, 58, 0.2);
+    --transition-fast: 0.2s;
   }
 }
 
@@ -1078,6 +1137,7 @@ defineExpose({ applyFormat, insertText, editorMode });
     --preview-bg: #fafafa;
     --danger-color: #dc2626;
     --danger-bg: #fee2e2;
+    --transition-fast: 0.2s;
   }
 }
 </style>

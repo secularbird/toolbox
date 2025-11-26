@@ -933,6 +933,7 @@ async function handleImportDocument(result: ImportResult) {
                 v-model="editorContent" 
                 @insertTable="handleShowTableInsert"
                 @insertReminder="handleShowReminderInsert"
+                @editTable="handleEditTable"
               />
             </div>
             <div v-if="!isWysiwygMode" class="preview-pane">
