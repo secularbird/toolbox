@@ -11,26 +11,18 @@ export function generateDiagramId(type: string): string {
   return `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Encode Mermaid diagram content for mermaid.ink URL
-export function encodeMermaidForUrl(mermaidCode: string): string {
-  // mermaid.ink uses pako compression + base64 encoding
-  // For simplicity, we'll use the base64 encoding method which is widely supported
-  const encoded = btoa(encodeURIComponent(mermaidCode));
-  return encoded;
-}
-
 // Generate mermaid.ink URL for a Mermaid diagram
 export function getMermaidInkUrl(mermaidCode: string, theme: 'default' | 'dark' = 'default'): string {
-  // Use the pako-based encoding that mermaid.ink expects
-  // The format is: base64url(deflate(json({code, mermaid: {theme}})))
-  // For simplicity, we use the simpler base64 encoding format
+  // Use the JSON encoding format that mermaid.ink expects
   const json = JSON.stringify({
     code: mermaidCode,
     mermaid: {
       theme: theme
     }
   });
-  const encoded = btoa(unescape(encodeURIComponent(json)));
+  // Use TextEncoder for proper UTF-8 encoding, then convert to base64
+  const bytes = new TextEncoder().encode(json);
+  const encoded = btoa(String.fromCharCode(...bytes));
   return `https://mermaid.ink/svg/${encoded}`;
 }
 

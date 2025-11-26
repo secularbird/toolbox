@@ -260,18 +260,21 @@ async function destroyMilkdown() {
 }
 
 // Render diagram code blocks in WYSIWYG mode
+// Uses data-diagram-processed attribute to skip already processed blocks
 function renderDiagramsInWysiwyg() {
   if (!milkdownContainerRef.value || editorMode.value !== 'wysiwyg') return;
   
-  // Find all code blocks in the WYSIWYG editor
-  const codeBlocks = milkdownContainerRef.value.querySelectorAll('pre code');
+  // Only find unprocessed code blocks by using a more specific selector
+  // This is more efficient than checking all code blocks
+  const unprocessedPreBlocks = milkdownContainerRef.value.querySelectorAll(
+    'pre:not([data-diagram-processed="true"]) code'
+  );
   
-  codeBlocks.forEach((codeBlock) => {
+  if (unprocessedPreBlocks.length === 0) return;
+  
+  unprocessedPreBlocks.forEach((codeBlock) => {
     const preElement = codeBlock.parentElement;
     if (!preElement) return;
-    
-    // Skip if already processed
-    if (preElement.getAttribute('data-diagram-processed') === 'true') return;
     
     // Check language class for mermaid or plantuml
     const classList = codeBlock.className.split(' ');
@@ -279,6 +282,14 @@ function renderDiagramsInWysiwyg() {
     if (!langClass) return;
     
     const lang = langClass.replace('language-', '').toLowerCase();
+    
+    // Only process diagram languages
+    if (lang !== 'mermaid' && lang !== 'mermiad' && lang !== 'plantuml') {
+      // Mark non-diagram code blocks as processed to skip in future iterations
+      preElement.setAttribute('data-diagram-processed', 'skipped');
+      return;
+    }
+    
     const code = codeBlock.textContent || '';
     
     if (lang === 'mermaid' || lang === 'mermiad') {
