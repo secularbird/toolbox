@@ -1041,7 +1041,7 @@ defineExpose({ applyFormat, insertText, editorMode });
   width: 100%;
   margin-bottom: 16px;
   cursor: pointer;
-  transition: box-shadow 0.2s, transform 0.1s;
+  transition: box-shadow var(--transition-fast, 0.2s), transform var(--transition-fast, 0.2s);
   position: relative;
 }
 
@@ -1050,6 +1050,9 @@ defineExpose({ applyFormat, insertText, editorMode });
   transform: translateY(-1px);
 }
 
+/* Decorative tooltip - accessibility note: screen readers will announce the table content,
+   and keyboard users can interact with table cells directly. The double-click action
+   provides an enhanced editing experience but is not the only way to edit tables. */
 .milkdown-editor :deep(table::after) {
   content: '✏️ Double-click to edit';
   position: absolute;
@@ -1061,7 +1064,7 @@ defineExpose({ applyFormat, insertText, editorMode });
   padding: 2px 8px;
   border-radius: 4px;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity var(--transition-fast, 0.2s);
   pointer-events: none;
 }
 
@@ -1109,6 +1112,7 @@ defineExpose({ applyFormat, insertText, editorMode });
     --preview-bg: #0f0f0f;
     --danger-color: #ff453a;
     --danger-bg: rgba(255, 69, 58, 0.2);
+    --transition-fast: 0.2s;
   }
 }
 
@@ -1133,6 +1137,7 @@ defineExpose({ applyFormat, insertText, editorMode });
     --preview-bg: #fafafa;
     --danger-color: #dc2626;
     --danger-bg: #fee2e2;
+    --transition-fast: 0.2s;
   }
 }
 </style>
