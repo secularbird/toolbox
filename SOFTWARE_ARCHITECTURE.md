@@ -1105,15 +1105,19 @@ toolbox/
 │   │   ├── WikiSidebar.vue       # Navigation and sections
 │   │   ├── WikiMetadata.vue      # Tags and revision history
 │   │   ├── RemindersApp.vue      # Full reminders application
-│   │   ├── DocumentImportModal.vue # Document import
+│   │   ├── DocumentImportModal.vue # Document import modal
 │   │   ├── TableInsertModal.vue  # Table creation wizard
-│   │   ├── ReminderInsertModal.vue # Reminder insertion
+│   │   ├── ReminderInsertModal.vue # Reminder insertion modal
 │   │   ├── ContextMenu.vue       # Right-click context menu
 │   │   └── SectionNode.vue       # Recursive section tree node
 │   ├── composables/
-│   │   └── useWikiStore.ts       # Wiki state management
-│   ├── types/                    # TypeScript type definitions
-│   └── utils/                    # Utility functions
+│   │   ├── useWikiStore.ts       # Wiki state management
+│   │   └── useDocumentImport.ts  # Document import logic
+│   ├── types/
+│   │   └── plantuml-encoder.d.ts # PlantUML type definitions
+│   └── utils/
+│       ├── markdown.ts           # Markdown parsing utilities
+│       └── editorHistory.ts      # Editor undo/redo history
 │
 ├── src-tauri/                    # Backend source
 │   ├── src/
@@ -1124,7 +1128,7 @@ toolbox/
 │   │   ├── database/
 │   │   │   ├── mod.rs            # Module exports
 │   │   │   ├── init.rs           # DB initialization
-│   │   │   └── operations.rs    # CRUD operations
+│   │   │   └── operations.rs     # CRUD operations
 │   │   ├── models/
 │   │   │   ├── mod.rs
 │   │   │   └── reminder.rs       # Data models
@@ -1141,13 +1145,17 @@ toolbox/
 │   ├── tauri.conf.json           # Tauri configuration
 │   └── build.rs                  # Build script
 │
-├── public/                       # Public assets
+├── public/                       # Static assets (icons)
 ├── notification.html             # Notification window
+├── index.html                    # Main window HTML
 ├── package.json                  # Node dependencies
 ├── vite.config.ts                # Vite configuration
 ├── tsconfig.json                 # TypeScript configuration
 ├── README.md                     # User documentation
-└── SOFTWARE_ARCHITECTURE.md      # This file
+├── SOFTWARE_ARCHITECTURE.md      # This file
+├── WIKI_FEATURE.md               # Wiki feature documentation
+├── GITHUB_SYNC_GUIDE.md          # GitHub sync setup guide
+└── 使用说明.md                   # Chinese usage guide
 ```
 
 ### Glossary | 术语表
@@ -1165,8 +1173,8 @@ toolbox/
 
 ## Document Maintenance | 文档维护
 
-**Last Updated**: 2024-11-25  
-**Version**: 1.1.0  
+**Last Updated**: 2025-11-26  
+**Version**: 1.2.0  
 **Maintainer**: Toolbox Development Team
 
 This document should be updated whenever:
