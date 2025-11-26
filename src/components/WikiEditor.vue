@@ -22,7 +22,7 @@ const emit = defineEmits<{
 }>();
 
 // Editor mode: 'markdown' or 'wysiwyg'
-const editorMode = ref<'markdown' | 'wysiwyg'>('markdown');
+const editorMode = ref<'markdown' | 'wysiwyg'>('wysiwyg');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const milkdownContainerRef = ref<HTMLDivElement | null>(null);
 const localValue = ref(props.modelValue);
@@ -383,9 +383,15 @@ function handlePaste(e: ClipboardEvent) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (editorMode.value === 'markdown') {
     textareaRef.value?.focus();
+  } else if (editorMode.value === 'wysiwyg') {
+    // Initialize Milkdown for default WYSIWYG mode
+    await nextTick();
+    if (milkdownContainerRef.value) {
+      await initMilkdown(milkdownContainerRef.value, localValue.value);
+    }
   }
 });
 
