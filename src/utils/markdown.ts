@@ -94,12 +94,20 @@ export function renderMarkdown(content: string): string {
   }
 }
 
-// Extract markdown tables from content
-export function extractMarkdownTables(content: string): string[] {
-  const tables: string[] = [];
+// Extract markdown tables from content with their positions
+export interface TableMatch {
+  markdown: string;
+  startIndex: number;
+  endIndex: number;
+}
+
+export function extractMarkdownTablesWithPositions(content: string): TableMatch[] {
+  const tables: TableMatch[] = [];
   const lines = content.split('\n');
   let currentTable: string[] = [];
   let inTable = false;
+  let currentCharIndex = 0;
+  let tableStartCharIndex = 0;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -107,48 +115,61 @@ export function extractMarkdownTables(content: string): string[] {
     
     // Check if this line is part of a table (starts and ends with |)
     const isTableLine = trimmedLine.startsWith('|') && trimmedLine.endsWith('|');
-    // Check if this is a separator line (| --- | --- |)
-    const isSeparatorLine = /^\|[\s\-:|]+\|$/.test(trimmedLine);
+    // Check if this is a separator line with optional alignment markers
+    const isSeparatorLine = /^\|(?:\s*:?-+:?\s*\|)+$/.test(trimmedLine);
     
     if (isTableLine || isSeparatorLine) {
       if (!inTable) {
         inTable = true;
         currentTable = [];
+        tableStartCharIndex = currentCharIndex;
       }
       currentTable.push(line);
     } else {
       if (inTable && currentTable.length >= 2) {
         // A valid table must have at least header + separator
-        tables.push(currentTable.join('\n'));
+        const tableMarkdown = currentTable.join('\n');
+        tables.push({
+          markdown: tableMarkdown,
+          startIndex: tableStartCharIndex,
+          endIndex: currentCharIndex - 1 // -1 to exclude the newline
+        });
       }
       inTable = false;
       currentTable = [];
     }
+    
+    // Track character position (add 1 for newline)
+    currentCharIndex += line.length + 1;
   }
   
   // Handle table at the end of content
   if (inTable && currentTable.length >= 2) {
-    tables.push(currentTable.join('\n'));
+    const tableMarkdown = currentTable.join('\n');
+    tables.push({
+      markdown: tableMarkdown,
+      startIndex: tableStartCharIndex,
+      endIndex: content.length
+    });
   }
   
   return tables;
 }
 
-// Replace a specific table in content by index
+// Extract markdown tables from content (legacy function for backward compatibility)
+export function extractMarkdownTables(content: string): string[] {
+  return extractMarkdownTablesWithPositions(content).map(t => t.markdown);
+}
+
+// Replace a specific table in content by index using tracked positions
 export function replaceMarkdownTable(content: string, tableIndex: number, newTable: string): string {
-  const tables = extractMarkdownTables(content);
+  const tables = extractMarkdownTablesWithPositions(content);
   if (tableIndex < 0 || tableIndex >= tables.length) {
     return content;
   }
   
-  const oldTable = tables[tableIndex];
-  // Find and replace the table in the content
-  const tableStartIndex = content.indexOf(oldTable);
-  if (tableStartIndex === -1) {
-    return content;
-  }
-  
-  return content.substring(0, tableStartIndex) + newTable + content.substring(tableStartIndex + oldTable.length);
+  const tableMatch = tables[tableIndex];
+  return content.substring(0, tableMatch.startIndex) + newTable + content.substring(tableMatch.endIndex);
 }
 
 // Lightweight sanitizer to strip scripts and dangerous attributes

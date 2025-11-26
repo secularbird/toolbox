@@ -57,16 +57,19 @@ function initializeTable() {
   }
 }
 
-// Watch for quick mode changes to regenerate table
+// Watch for quick mode changes to regenerate table (only for new tables, not when editing)
 watch([rows, cols, hasHeader], () => {
-  if (editMode.value === 'quick') {
+  if (editMode.value === 'quick' && !isEditing.value) {
     tableMarkdown.value = generateInitialTable();
   }
 });
 
 // Switch to visual mode with current settings
 function switchToVisual() {
-  tableMarkdown.value = generateInitialTable();
+  // Only generate new table if not editing an existing one
+  if (!isEditing.value) {
+    tableMarkdown.value = generateInitialTable();
+  }
   editMode.value = 'visual';
 }
 
