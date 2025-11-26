@@ -814,54 +814,65 @@ async function handleImportDocument(result: ImportResult) {
 <template>
   <div class="wiki-app">
     <div class="wiki-shell">
-      <header class="wiki-topbar">
-        <div class="wiki-topbar-left">
+      <!-- Header -->
+      <header class="wiki-header">
+        <div class="header-left">
           <div class="title-chip">📚 Wiki</div>
-          <button class="topbar-btn" @click="handleCreatePage" :disabled="saving || isLoading">
+          <button class="header-btn" @click="handleCreatePage" :disabled="saving || isLoading">
             + New Page
           </button>
-          <button class="topbar-btn" @click="handleShowImport" :disabled="saving || isLoading">
+          <button class="header-btn" @click="handleShowImport" :disabled="saving || isLoading">
             📄 Import
           </button>
-          <button class="topbar-btn ghost" @click="showRemindersPanel = true">
+          <button class="header-btn ghost" @click="showRemindersPanel = true">
             📝 Reminders
           </button>
-          <button class="topbar-btn primary" @click="handleSave" :disabled="!hasPageSelected || saving">
+          <button class="header-btn primary" @click="handleSave" :disabled="!hasPageSelected || saving">
             {{ saving ? 'Saving…' : 'Save' }}
           </button>
         </div>
-        <div class="status-text">
-          <span v-if="error">{{ error }}</span>
-          <span v-else-if="formError">{{ formError }}</span>
-          <span v-else-if="autoSaving">Autosaving…</span>
-          <span v-else-if="unsavedChanges">Unsaved changes</span>
-          <span v-else-if="message">{{ message }}</span>
+        <div class="header-center">
+          <div class="breadcrumbs">{{ breadcrumbs }}</div>
+        </div>
+        <div class="header-right">
+          <div class="status-text">
+            <span v-if="error">{{ error }}</span>
+            <span v-else-if="formError">{{ formError }}</span>
+            <span v-else-if="autoSaving">Autosaving…</span>
+            <span v-else-if="unsavedChanges">Unsaved changes</span>
+            <span v-else-if="message">{{ message }}</span>
+          </div>
         </div>
       </header>
 
+      <!-- Main Layout: Left, Main, Right -->
       <div class="wiki-layout">
-        <WikiSidebar
-          :pages="displayedPages"
-          :current-page-id="selectedPageId"
-          :loading="isLoading || saving"
-          external-search
-          :available-tags="availableTags"
-          :tag-filter="tagFilter"
-          :sections="sections"
-          :selected-section-id="selectedSectionId"
-          @selectPage="selectPage"
-          @createPage="handleCreatePage"
-          @search="handleSearch"
-          @update:tagFilter="handleTagFilterChange"
-          @selectSection="handleSelectSection"
-          @addSection="handleAddSection"
-          @renameSection="handleRenameSection"
-          @deleteSection="handleDeleteSection"
-          @deletePage="handleDeletePageFromSidebar"
-          @renamePage="handleRenamePageFromSidebar"
-        />
+        <!-- Left Sidebar -->
+        <aside class="wiki-left-sidebar">
+          <WikiSidebar
+            :pages="displayedPages"
+            :current-page-id="selectedPageId"
+            :loading="isLoading || saving"
+            external-search
+            :available-tags="availableTags"
+            :tag-filter="tagFilter"
+            :sections="sections"
+            :selected-section-id="selectedSectionId"
+            @selectPage="selectPage"
+            @createPage="handleCreatePage"
+            @search="handleSearch"
+            @update:tagFilter="handleTagFilterChange"
+            @selectSection="handleSelectSection"
+            @addSection="handleAddSection"
+            @renameSection="handleRenameSection"
+            @deleteSection="handleDeleteSection"
+            @deletePage="handleDeletePageFromSidebar"
+            @renamePage="handleRenamePageFromSidebar"
+          />
+        </aside>
 
-        <div class="wiki-editor-panel">
+        <!-- Main Content -->
+        <main class="wiki-main-content">
           <div class="title-row" v-if="hasPageSelected">
             <input
               v-model="editorTitle"
@@ -872,13 +883,12 @@ async function handleImportDocument(result: ImportResult) {
             <div class="title-meta">
               <span v-if="currentPage">Updated {{ new Date(currentPage.updated_at * 1000).toLocaleString() }}</span>
             </div>
-            <div class="breadcrumbs">{{ breadcrumbs }}</div>
           </div>
 
           <div v-if="!hasPageSelected" class="empty-editor">
             <h3>No page selected</h3>
             <p>Create a new page or pick one from the sidebar.</p>
-            <button class="topbar-btn primary" @click="handleCreatePage">Create first page</button>
+            <button class="header-btn primary" @click="handleCreatePage">Create first page</button>
           </div>
 
           <div v-else class="editor-split" :class="{ 'full-width': isWysiwygMode }">
@@ -894,19 +904,38 @@ async function handleImportDocument(result: ImportResult) {
               <WikiPreview :content="editorContent" />
             </div>
           </div>
-        </div>
+        </main>
 
-        <WikiMetadata
-          v-if="hasPageSelected"
-          :tags="editorTags"
-          :created-at="currentPage!.created_at"
-          :updated-at="currentPage!.updated_at"
-          :revisions="revisions"
-          @update:tags="updateTags"
-          @delete="handleDelete"
-          @restore="handleRestoreRevision"
-        />
+        <!-- Right Sidebar -->
+        <aside class="wiki-right-sidebar">
+          <WikiMetadata
+            v-if="hasPageSelected && currentPage"
+            :tags="editorTags"
+            :created-at="currentPage.created_at"
+            :updated-at="currentPage.updated_at"
+            :revisions="revisions"
+            @update:tags="updateTags"
+            @delete="handleDelete"
+            @restore="handleRestoreRevision"
+          />
+        </aside>
       </div>
+
+      <!-- Footer -->
+      <footer class="wiki-footer">
+        <div class="footer-left">
+          <span class="footer-text">📚 Wiki Application</span>
+        </div>
+        <div class="footer-center">
+          <span class="footer-text" v-if="currentPage">
+            {{ pages.length }} pages • Last modified: {{ new Date(currentPage.updated_at * 1000).toLocaleDateString() }}
+          </span>
+          <span class="footer-text" v-else>{{ pages.length }} pages</span>
+        </div>
+        <div class="footer-right">
+          <span class="footer-text">v0.1.0</span>
+        </div>
+      </footer>
     </div>
     
     <DocumentImportModal 
@@ -954,21 +983,37 @@ async function handleImportDocument(result: ImportResult) {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
 }
 
-.wiki-topbar {
+/* ========== Header ========== */
+.wiki-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: var(--topbar-bg);
+  background: var(--header-bg);
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  gap: 16px;
 }
 
-.wiki-topbar-left {
+.header-left {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.header-right {
+  flex-shrink: 0;
 }
 
 .title-chip {
@@ -977,9 +1022,10 @@ async function handleImportDocument(result: ImportResult) {
   background: var(--chip-bg);
   color: var(--text-primary);
   font-size: 13px;
+  font-weight: 600;
 }
 
-.topbar-btn {
+.header-btn {
   padding: 8px 14px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
@@ -988,21 +1034,32 @@ async function handleImportDocument(result: ImportResult) {
   cursor: pointer;
   transition: all 0.15s;
   font-weight: 600;
+  font-size: 13px;
 }
 
-.topbar-btn.primary {
+.header-btn.primary {
   background: var(--primary-color);
   border-color: var(--primary-color);
   color: white;
 }
 
-.topbar-btn:disabled {
+.header-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.topbar-btn:not(:disabled):hover {
+.header-btn:not(:disabled):hover {
   transform: translateY(-1px);
+}
+
+.header-btn.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.header-btn.ghost.active {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .status-text {
@@ -1010,35 +1067,94 @@ async function handleImportDocument(result: ImportResult) {
   font-size: 13px;
 }
 
-.view-toggle {
-  display: flex;
-  gap: 4px;
+.breadcrumbs {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.topbar-btn.ghost {
-  background: transparent;
-  border-color: transparent;
-}
-
-.topbar-btn.ghost.active {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
+/* ========== Main Layout (Left, Main, Right) ========== */
 .wiki-layout {
   display: grid;
   grid-template-columns: 260px 1fr 260px;
+  grid-template-areas: "left main right";
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
-.wiki-editor-panel {
+/* Left Sidebar */
+.wiki-left-sidebar {
+  grid-area: left;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border-color);
-  background: var(--panel-bg);
+  background: var(--sidebar-bg);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
+/* Main Content */
+.wiki-main-content {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-bg);
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Right Sidebar */
+.wiki-right-sidebar {
+  grid-area: right;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-color);
+  background: var(--sidebar-bg);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ========== Footer ========== */
+.wiki-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--footer-bg);
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.footer-left,
+.footer-center,
+.footer-right {
+  display: flex;
+  align-items: center;
+}
+
+.footer-left {
+  flex-shrink: 0;
+}
+
+.footer-center {
+  flex: 1;
+  justify-content: center;
+}
+
+.footer-right {
+  flex-shrink: 0;
+}
+
+.footer-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ========== Editor Content ========== */
 .title-row {
   display: flex;
   align-items: center;
@@ -1046,6 +1162,7 @@ async function handleImportDocument(result: ImportResult) {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .title-input {
@@ -1067,11 +1184,7 @@ async function handleImportDocument(result: ImportResult) {
 .title-meta {
   font-size: 12px;
   color: var(--text-secondary);
-}
-
-.breadcrumbs {
-  font-size: 12px;
-  color: var(--text-secondary);
+  flex-shrink: 0;
 }
 
 .editor-split {
@@ -1079,6 +1192,7 @@ async function handleImportDocument(result: ImportResult) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 0;
+  overflow: hidden;
 }
 
 .editor-split.full-width {
@@ -1090,6 +1204,7 @@ async function handleImportDocument(result: ImportResult) {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .editor-pane {
@@ -1114,6 +1229,7 @@ async function handleImportDocument(result: ImportResult) {
   color: var(--text-secondary);
 }
 
+/* ========== Reminders Drawer ========== */
 .reminders-overlay {
   position: fixed;
   inset: 0;
@@ -1140,7 +1256,7 @@ async function handleImportDocument(result: ImportResult) {
   justify-content: space-between;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--topbar-bg);
+  background: var(--header-bg);
 }
 
 .drawer-title {
@@ -1161,12 +1277,153 @@ async function handleImportDocument(result: ImportResult) {
   color: var(--text-primary);
 }
 
+/* ========== Responsive Design (自适应) ========== */
+
+/* Large screens (≥1200px) - Full layout */
+@media (min-width: 1200px) {
+  .wiki-layout {
+    grid-template-columns: 280px 1fr 280px;
+  }
+}
+
+/* Medium screens (768px - 1199px) - Narrower sidebars */
+@media (max-width: 1199px) and (min-width: 768px) {
+  .wiki-layout {
+    grid-template-columns: 220px 1fr 220px;
+  }
+  
+  .header-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .title-chip {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
+/* Small screens (576px - 767px) - Hide right sidebar */
+@media (max-width: 767px) and (min-width: 576px) {
+  .wiki-layout {
+    grid-template-columns: 200px 1fr;
+    grid-template-areas: "left main";
+  }
+  
+  .wiki-right-sidebar {
+    display: none;
+  }
+  
+  .wiki-header {
+    padding: 8px 12px;
+  }
+  
+  .header-center {
+    display: none;
+  }
+  
+  .header-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .editor-split {
+    grid-template-columns: 1fr;
+  }
+  
+  .preview-pane {
+    display: none;
+  }
+}
+
+/* Extra small screens (<576px) - Mobile layout, single column */
+@media (max-width: 575px) {
+  .wiki-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas: "main";
+  }
+  
+  .wiki-left-sidebar {
+    display: none;
+  }
+  
+  .wiki-right-sidebar {
+    display: none;
+  }
+  
+  .wiki-header {
+    flex-wrap: wrap;
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  .header-left {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .header-center {
+    display: none;
+  }
+  
+  .header-right {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .header-btn {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  .title-chip {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+  
+  .title-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px 12px;
+  }
+  
+  .title-input {
+    font-size: 16px;
+    padding: 8px 10px;
+  }
+  
+  .editor-split {
+    grid-template-columns: 1fr;
+  }
+  
+  .preview-pane {
+    display: none;
+  }
+  
+  .wiki-footer {
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 12px;
+  }
+  
+  .footer-left,
+  .footer-center,
+  .footer-right {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ========== Color Scheme Variables ========== */
 @media (prefers-color-scheme: light) {
   .wiki-app {
     --page-bg: #f5f5f5;
     --panel-bg: #ffffff;
+    --sidebar-bg: #fafafa;
     --preview-bg: #fafafa;
-    --topbar-bg: #ffffff;
+    --header-bg: #ffffff;
+    --footer-bg: #fafafa;
     --border-color: #e5e5ea;
     --text-primary: #1d1d1f;
     --text-secondary: #71717a;
@@ -1182,8 +1439,10 @@ async function handleImportDocument(result: ImportResult) {
   .wiki-app {
     --page-bg: #0f1115;
     --panel-bg: #111827;
+    --sidebar-bg: #0d1117;
     --preview-bg: #0b1222;
-    --topbar-bg: #0b1222;
+    --header-bg: #0b1222;
+    --footer-bg: #0d1117;
     --border-color: #1f2937;
     --text-primary: #f8fafc;
     --text-secondary: #94a3b8;
