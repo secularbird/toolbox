@@ -621,7 +621,7 @@ defineExpose({ applyFormat, insertText, editorMode });
   flex: 1;
   display: flex;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .milkdown-editor {
