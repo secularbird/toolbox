@@ -366,8 +366,11 @@ stop
 - **粗体**: Ctrl/Cmd + B
 - **斜体**: Ctrl/Cmd + I
 - **链接**: Ctrl/Cmd + K
+- **插入表格**: Ctrl/Cmd + Shift + T
+- **插入提醒**: Ctrl/Cmd + Shift + R
 - **撤销**: Ctrl/Cmd + Z
 - **重做**: Ctrl/Cmd + Shift + Z 或 Ctrl/Cmd + Y
+- **缩进**: Tab (2空格)
 
 ## 📝 编辑提示
 

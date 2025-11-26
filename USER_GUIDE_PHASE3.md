@@ -70,6 +70,7 @@ Tables are inserted as markdown:
 
 ### Content Insertion
 - `Ctrl+Shift+T` / `Cmd+Shift+T` - Insert Table
+- `Ctrl+Shift+R` / `Cmd+Shift+R` - Insert Reminder
 - `Tab` - Indent
 - `Shift+Tab` - Outdent
 
@@ -81,6 +82,9 @@ Tables are inserted as markdown:
 ### Page Management
 - **Right-Click** on page in sidebar - Context menu (Open, Rename, Delete)
 - Use toolbar buttons for Save, Import, etc.
+
+### Reminders
+- `Enter` - Quick add reminder (in reminder input field)
 
 ---
 
