@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick, shallowRef, computed } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats, renderMarkdown, generateDiagramId } from '../utils/markdown';
+import { ref, watch, onMounted, onBeforeUnmount, nextTick, shallowRef } from 'vue';
+import { wrapSelection, insertAtCursor, markdownFormats } from '../utils/markdown';
 import { EditorHistory } from '../utils/editorHistory';
-import mermaid from 'mermaid';
 // Milkdown imports
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core';
 import { commonmark } from '@milkdown/preset-commonmark';
@@ -26,7 +25,6 @@ const emit = defineEmits<{
 const editorMode = ref<'markdown' | 'wysiwyg'>('markdown');
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const milkdownContainerRef = ref<HTMLDivElement | null>(null);
-const previewRef = ref<HTMLDivElement | null>(null);
 const localValue = ref(props.modelValue);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 const history = new EditorHistory(props.modelValue);
@@ -37,78 +35,6 @@ const milkdownEditor = shallowRef<Editor | null>(null);
 const isMilkdownReady = ref(false);
 // Track if we're updating content to prevent loops
 let isUpdatingMilkdown = false;
-
-// Track mermaid rendering state
-let mermaidRenderingInProgress = false;
-
-// Detect if dark mode is enabled
-const isDarkMode = () => {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-};
-
-// Initialize Mermaid with configuration
-const initMermaid = () => {
-  const darkMode = isDarkMode();
-  mermaid.initialize({
-    startOnLoad: false,
-    theme: darkMode ? 'dark' : 'default',
-    securityLevel: 'loose',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    flowchart: {
-      htmlLabels: true,
-      curve: 'basis',
-    },
-    sequence: {
-      diagramMarginX: 50,
-      diagramMarginY: 10,
-      actorMargin: 50,
-      width: 150,
-      height: 65,
-      boxMargin: 10,
-      boxTextMargin: 5,
-      noteMargin: 10,
-      messageMargin: 35,
-    },
-  });
-};
-
-// Render Mermaid diagrams in preview
-async function renderMermaidInPreview() {
-  if (mermaidRenderingInProgress || !previewRef.value) {
-    return;
-  }
-
-  mermaidRenderingInProgress = true;
-  await nextTick();
-
-  try {
-    const mermaidElements = previewRef.value.querySelectorAll('.mermaid:not([data-processed="rendered"])');
-
-    if (mermaidElements.length > 0) {
-      for (const element of Array.from(mermaidElements)) {
-        try {
-          element.setAttribute('data-processed', 'processing');
-          const id = generateDiagramId('mermaid');
-          element.id = id;
-
-          await mermaid.run({
-            nodes: [element as HTMLElement],
-          });
-
-          element.setAttribute('data-processed', 'rendered');
-        } catch (err) {
-          console.error('Mermaid rendering error for element:', err);
-          element.setAttribute('data-processed', 'error');
-          element.innerHTML = `<div class="diagram-error">Mermaid rendering error: ${err instanceof Error ? err.message : String(err)}</div>`;
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Mermaid batch rendering error:', error);
-  } finally {
-    mermaidRenderingInProgress = false;
-  }
-}
 
 // Initialize Milkdown editor
 async function initMilkdown(container: HTMLDivElement, content: string) {
@@ -152,11 +78,6 @@ async function destroyMilkdown() {
   }
 }
 
-// Computed preview content (for wysiwyg preview mode)
-const previewContent = computed(() => {
-  return renderMarkdown(localValue.value);
-});
-
 watch(() => props.modelValue, async (newVal) => {
   if (localValue.value !== newVal) {
     localValue.value = newVal;
@@ -175,13 +96,6 @@ watch(localValue, (newVal) => {
     history.save(newVal);
   }
   emit('update:modelValue', newVal);
-  
-  // Update preview with mermaid diagrams
-  if (editorMode.value === 'wysiwyg') {
-    nextTick(() => {
-      renderMermaidInPreview();
-    });
-  }
 });
 
 // Watch for mode changes - this is the key feature!
@@ -470,25 +384,6 @@ function handlePaste(e: ClipboardEvent) {
 }
 
 onMounted(() => {
-  // Initialize Mermaid
-  initMermaid();
-  
-  // Re-initialize Mermaid when color scheme changes
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  mediaQuery.addEventListener('change', async () => {
-    initMermaid();
-    // Re-render all diagrams in preview
-    if (previewRef.value) {
-      const elements = previewRef.value.querySelectorAll('.mermaid[data-processed="rendered"]');
-      elements.forEach(el => {
-        el.removeAttribute('data-processed');
-        el.removeAttribute('id');
-      });
-      mermaidRenderingInProgress = false;
-      await renderMermaidInPreview();
-    }
-  });
-  
   if (editorMode.value === 'markdown') {
     textareaRef.value?.focus();
   }
@@ -607,12 +502,6 @@ defineExpose({ applyFormat, insertText, editorMode });
         ref="milkdownContainerRef" 
         class="milkdown-editor"
         :class="{ 'is-loading': !isMilkdownReady }"
-      ></div>
-      <!-- Preview panel for mermaid/plantuml diagrams -->
-      <div 
-        ref="previewRef" 
-        class="milkdown-preview"
-        v-html="previewContent"
       ></div>
     </div>
   </div>
@@ -739,19 +628,10 @@ defineExpose({ applyFormat, insertText, editorMode });
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  border-right: 1px solid var(--border-color);
 }
 
 .milkdown-editor.is-loading {
   opacity: 0.6;
-}
-
-.milkdown-preview {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  padding: 16px;
-  background: var(--preview-bg, var(--editor-bg));
 }
 
 /* Milkdown editor styling */
@@ -894,49 +774,6 @@ defineExpose({ applyFormat, insertText, editorMode });
   margin: 24px 0;
   background-color: var(--border-color);
   border: 0;
-}
-
-/* Preview pane styling (for diagrams) */
-.milkdown-preview :deep(.diagram-container) {
-  margin: 16px 0;
-  padding: 16px;
-  background: var(--diagram-bg);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  overflow-x: auto;
-}
-
-.milkdown-preview :deep(.diagram-image) {
-  display: block;
-  max-width: 100%;
-  height: auto;
-  margin: 0 auto;
-}
-
-.milkdown-preview :deep(.mermaid) {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: var(--diagram-bg);
-  margin: 16px 0;
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  overflow-x: auto;
-  min-height: 100px;
-}
-
-.milkdown-preview :deep(.mermaid svg) {
-  max-width: 100%;
-  height: auto;
-}
-
-.milkdown-preview :deep(.diagram-error) {
-  color: var(--error-color);
-  padding: 12px;
-  background: var(--error-bg);
-  border-radius: 6px;
-  font-family: monospace;
 }
 
 /* Dark mode */
