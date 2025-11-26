@@ -49,11 +49,15 @@ let isUpdatingMilkdown = false;
 // Table toolbar state for WYSIWYG mode
 const showTableToolbar = ref(false);
 const tableToolbarPosition = ref({ top: 0, left: 0 });
+// Track last known state to avoid unnecessary updates
+let lastInTableState = false;
+let lastSelectionFrom = -1;
 
 // Check if cursor is in a table and update toolbar visibility
 function updateTableToolbarState() {
   if (!milkdownEditor.value || !isMilkdownReady.value || editorMode.value !== 'wysiwyg') {
     showTableToolbar.value = false;
+    lastInTableState = false;
     return;
   }
 
@@ -61,13 +65,22 @@ function updateTableToolbarState() {
     milkdownEditor.value.action((ctx: Ctx) => {
       const view = ctx.get(editorViewCtx);
       const { state } = view;
+      const currentInTable = isInTable(state);
+      const currentFrom = state.selection.from;
       
-      if (isInTable(state)) {
+      // Only update if the table state or position has changed
+      if (currentInTable === lastInTableState && currentFrom === lastSelectionFrom) {
+        return;
+      }
+      
+      lastInTableState = currentInTable;
+      lastSelectionFrom = currentFrom;
+      
+      if (currentInTable) {
         showTableToolbar.value = true;
         
         // Position the toolbar near the selection
-        const { from } = state.selection;
-        const coords = view.coordsAtPos(from);
+        const coords = view.coordsAtPos(currentFrom);
         const editorRect = milkdownContainerRef.value?.getBoundingClientRect();
         
         if (editorRect) {
@@ -82,6 +95,7 @@ function updateTableToolbarState() {
     });
   } catch {
     showTableToolbar.value = false;
+    lastInTableState = false;
   }
 }
 
@@ -793,7 +807,7 @@ defineExpose({ applyFormat, insertText, editorMode });
 /* Table toolbar for WYSIWYG mode */
 .table-toolbar {
   position: absolute;
-  z-index: 100;
+  z-index: 1000;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -827,9 +841,9 @@ defineExpose({ applyFormat, insertText, editorMode });
 }
 
 .table-toolbar-btn.danger:hover {
-  background: #fee2e2;
-  border-color: #ef4444;
-  color: #dc2626;
+  background: var(--danger-bg);
+  border-color: var(--danger-color);
+  color: var(--danger-color);
 }
 
 .table-toolbar-divider {
@@ -1038,12 +1052,8 @@ defineExpose({ applyFormat, insertText, editorMode });
     --error-color: #ff453a;
     --error-bg: rgba(255, 69, 58, 0.1);
     --preview-bg: #0f0f0f;
-  }
-
-  .table-toolbar-btn.danger:hover {
-    background: rgba(255, 69, 58, 0.2);
-    border-color: #ff453a;
-    color: #ff453a;
+    --danger-color: #ff453a;
+    --danger-bg: rgba(255, 69, 58, 0.2);
   }
 }
 
@@ -1066,6 +1076,8 @@ defineExpose({ applyFormat, insertText, editorMode });
     --error-color: #ff3b30;
     --error-bg: rgba(255, 59, 48, 0.1);
     --preview-bg: #fafafa;
+    --danger-color: #dc2626;
+    --danger-bg: #fee2e2;
   }
 }
 </style>
