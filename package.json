@@ -13,6 +13,13 @@
     "port:clean": "lsof -ti:17520 | xargs kill -9 2>/dev/null; lsof -ti:17521 | xargs kill -9 2>/dev/null; echo 'Ports cleared'"
   },
   "dependencies": {
+    "@milkdown/core": "^7.17.2",
+    "@milkdown/ctx": "^7.17.2",
+    "@milkdown/plugin-history": "^7.17.2",
+    "@milkdown/plugin-listener": "^7.17.2",
+    "@milkdown/preset-commonmark": "^7.17.2",
+    "@milkdown/preset-gfm": "^7.17.2",
+    "@milkdown/vue": "^7.17.2",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2.4.2",
     "@tauri-apps/plugin-opener": "^2",
@@ -21,6 +28,7 @@
     "marked": "^17.0.0",
     "mermaid": "^11.12.1",
     "plantuml-encoder": "^1.4.0",
+    "prosemirror-view": "^1.41.3",
     "turndown": "^7.2.2",
     "turndown-plugin-gfm": "^1.0.2",
     "vue": "^3.5.13"
