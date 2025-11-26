@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#007AFF"/>
+  
+  <!-- Toolbox body -->
+  <rect x="96" y="220" width="320" height="180" rx="20" ry="20" fill="#FFFFFF"/>
+  
+  <!-- Toolbox lid -->
+  <rect x="80" y="180" width="352" height="60" rx="12" ry="12" fill="#E8E8E8"/>
+  
+  <!-- Handle -->
+  <rect x="200" y="140" width="112" height="50" rx="8" ry="8" fill="#5AC8FA"/>
+  <rect x="220" y="120" width="72" height="30" rx="6" ry="6" fill="#5AC8FA"/>
+  
+  <!-- Tool slots (decorative lines) -->
+  <rect x="130" y="260" width="80" height="12" rx="6" ry="6" fill="#007AFF"/>
+  <rect x="130" y="290" width="60" height="12" rx="6" ry="6" fill="#34C759"/>
+  <rect x="130" y="320" width="70" height="12" rx="6" ry="6" fill="#FF9500"/>
+  
+  <!-- Wrench icon -->
+  <g transform="translate(280, 260)">
+    <rect x="0" y="20" width="100" height="16" rx="8" ry="8" fill="#5856D6" transform="rotate(-30, 50, 28)"/>
+    <circle cx="15" cy="35" r="20" fill="#5856D6"/>
+    <circle cx="15" cy="35" r="8" fill="#FFFFFF"/>
+  </g>
+  
+  <!-- Latch -->
+  <rect x="236" y="235" width="40" height="20" rx="4" ry="4" fill="#8E8E93"/>
+</svg>
