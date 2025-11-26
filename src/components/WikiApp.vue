@@ -11,6 +11,7 @@ import RemindersApp from './RemindersApp.vue';
 import { useWiki } from '../composables/useWikiStore';
 import type { WikiPage, WikiRevisionMeta, WikiPageList } from '../composables/useWikiStore';
 import type { ImportResult } from '../composables/useDocumentImport';
+import { extractMarkdownTables, replaceMarkdownTable } from '../utils/markdown';
 import { ask } from '@tauri-apps/plugin-dialog';
 
 const {
@@ -53,6 +54,9 @@ const showTableModal = ref(false);
 const showReminderModal = ref(false);
 const showRemindersPanel = ref(false);
 const editorRef = ref<InstanceType<typeof WikiEditor> | null>(null);
+// Table editing state
+const editingTableIndex = ref<number | null>(null);
+const editingTableMarkdown = ref<string>('');
 let autosaveTimer: number | null = null;
 
 const availableTags = computed(() => {
@@ -748,14 +752,42 @@ function handleShowImport() {
 }
 
 function handleShowTableInsert() {
+  // Reset editing state for new table insertion
+  editingTableIndex.value = null;
+  editingTableMarkdown.value = '';
   showTableModal.value = true;
+}
+
+function handleEditTable(tableIndex: number) {
+  // Get the markdown table at the specified index
+  const tables = extractMarkdownTables(editorContent.value);
+  if (tableIndex >= 0 && tableIndex < tables.length) {
+    editingTableIndex.value = tableIndex;
+    editingTableMarkdown.value = tables[tableIndex];
+    showTableModal.value = true;
+  }
 }
 
 function handleInsertTable(markdown: string) {
   showTableModal.value = false;
-  if (editorRef.value) {
-    editorRef.value.insertText('\n\n' + markdown + '\n\n');
+  
+  if (editingTableIndex.value !== null) {
+    // Editing existing table - replace it
+    editorContent.value = replaceMarkdownTable(editorContent.value, editingTableIndex.value, markdown);
+    editingTableIndex.value = null;
+    editingTableMarkdown.value = '';
+  } else {
+    // Inserting new table
+    if (editorRef.value) {
+      editorRef.value.insertText('\n\n' + markdown + '\n\n');
+    }
   }
+}
+
+function handleCloseTableModal() {
+  showTableModal.value = false;
+  editingTableIndex.value = null;
+  editingTableMarkdown.value = '';
 }
 
 function handleShowReminderInsert() {
@@ -904,7 +936,7 @@ async function handleImportDocument(result: ImportResult) {
               />
             </div>
             <div v-if="!isWysiwygMode" class="preview-pane">
-              <WikiPreview :content="editorContent" />
+              <WikiPreview :content="editorContent" @editTable="handleEditTable" />
             </div>
           </div>
         </main>
@@ -949,7 +981,8 @@ async function handleImportDocument(result: ImportResult) {
     
     <TableInsertModal 
       v-if="showTableModal"
-      @close="showTableModal = false"
+      :initial-markdown="editingTableMarkdown"
+      @close="handleCloseTableModal"
       @insert="handleInsertTable"
     />
     

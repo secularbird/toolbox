@@ -23,7 +23,21 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (char) => escapeMap[char]);
 }
 
+// Table counter for tracking table indices in rendered content
+let tableIndex = 0;
+
+// Reset table counter before each render
+export function resetTableCounter(): void {
+  tableIndex = 0;
+}
+
 const renderer: RendererObject = {
+  table({ header, rows }) {
+    const currentIndex = tableIndex++;
+    const headerHtml = `<thead><tr>${header.map(cell => `<th>${cell.text}</th>`).join('')}</tr></thead>`;
+    const rowsHtml = rows.map(row => `<tr>${row.map(cell => `<td>${cell.text}</td>`).join('')}</tr>`).join('');
+    return `<table class="editable-table" data-table-index="${currentIndex}">${headerHtml}<tbody>${rowsHtml}</tbody></table>`;
+  },
   code({ text, lang }) {
     const normalizedLang = (lang || '').toLowerCase();
 
@@ -70,12 +84,92 @@ marked.setOptions({
 
 export function renderMarkdown(content: string): string {
   try {
+    // Reset table counter before each render
+    resetTableCounter();
     const raw = marked.parse(content) as string;
     return sanitizeHtml(raw);
   } catch (err) {
     console.error('Markdown render error:', err);
     return `<p>Error rendering markdown</p>`;
   }
+}
+
+// Extract markdown tables from content with their positions
+export interface TableMatch {
+  markdown: string;
+  startIndex: number;
+  endIndex: number;
+}
+
+export function extractMarkdownTablesWithPositions(content: string): TableMatch[] {
+  const tables: TableMatch[] = [];
+  const lines = content.split('\n');
+  let currentTable: string[] = [];
+  let inTable = false;
+  let currentCharIndex = 0;
+  let tableStartCharIndex = 0;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmedLine = line.trim();
+    
+    // Check if this line is part of a table (starts and ends with |)
+    const isTableLine = trimmedLine.startsWith('|') && trimmedLine.endsWith('|');
+    // Check if this is a separator line with optional alignment markers
+    const isSeparatorLine = /^\|(?:\s*:?-+:?\s*\|)+$/.test(trimmedLine);
+    
+    if (isTableLine || isSeparatorLine) {
+      if (!inTable) {
+        inTable = true;
+        currentTable = [];
+        tableStartCharIndex = currentCharIndex;
+      }
+      currentTable.push(line);
+    } else {
+      if (inTable && currentTable.length >= 2) {
+        // A valid table must have at least header + separator
+        const tableMarkdown = currentTable.join('\n');
+        tables.push({
+          markdown: tableMarkdown,
+          startIndex: tableStartCharIndex,
+          endIndex: currentCharIndex - 1 // -1 to exclude the newline
+        });
+      }
+      inTable = false;
+      currentTable = [];
+    }
+    
+    // Track character position (add 1 for newline)
+    currentCharIndex += line.length + 1;
+  }
+  
+  // Handle table at the end of content
+  if (inTable && currentTable.length >= 2) {
+    const tableMarkdown = currentTable.join('\n');
+    tables.push({
+      markdown: tableMarkdown,
+      startIndex: tableStartCharIndex,
+      endIndex: content.length
+    });
+  }
+  
+  return tables;
+}
+
+// Extract markdown tables from content (legacy function for backward compatibility)
+export function extractMarkdownTables(content: string): string[] {
+  return extractMarkdownTablesWithPositions(content).map(t => t.markdown);
+}
+
+// Replace a specific table in content by index using tracked positions
+export function replaceMarkdownTable(content: string, tableIndex: number, newTable: string): string {
+  const tables = extractMarkdownTablesWithPositions(content);
+  if (tableIndex < 0 || tableIndex >= tables.length) {
+    return content;
+  }
+  
+  const tableMatch = tables[tableIndex];
+  return content.substring(0, tableMatch.startIndex) + newTable + content.substring(tableMatch.endIndex);
 }
 
 // Lightweight sanitizer to strip scripts and dangerous attributes
