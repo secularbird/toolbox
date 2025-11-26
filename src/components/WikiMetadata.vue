@@ -113,7 +113,16 @@ function formatDate(timestamp: number): string {
         <div class="shortcut-row"><span>Cmd/Ctrl + Y</span><span>Redo</span></div>
         <div class="shortcut-group-label">General</div>
         <div class="shortcut-row"><span>F12</span><span>DevTools</span></div>
-        <div class="shortcut-row"><span>Autosave</span><span>Every few seconds</span></div>
+      </div>
+    </div>
+
+    <div class="metadata-section">
+      <h3>Features</h3>
+      <div class="features">
+        <div class="feature-row">
+          <span class="feature-icon">💾</span>
+          <span class="feature-text">Autosave every few seconds</span>
+        </div>
       </div>
     </div>
 
@@ -348,6 +357,28 @@ function formatDate(timestamp: number): string {
   justify-content: space-between;
   font-size: 12px;
   color: var(--text-primary);
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feature-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.feature-icon {
+  font-size: 14px;
+}
+
+.feature-text {
+  color: var(--text-secondary);
 }
 
 /* Dark mode */

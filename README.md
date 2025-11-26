@@ -161,7 +161,6 @@ The built application will be in `src-tauri/target/release/`.
 
 #### General
 - **F12**: Open DevTools
-- **Ctrl+Shift+I / Cmd+Option+I**: Open DevTools (alternative)
 
 ## 🏗️ Architecture | 架构
 

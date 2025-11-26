@@ -81,7 +81,6 @@ Tables are inserted as markdown:
 
 ### General
 - `F12` - Open Developer Tools
-- `Ctrl+Shift+I` / `Cmd+Option+I` - Open Developer Tools (alternative)
 
 ### Page Management
 - **Right-Click** on page in sidebar - Context menu (Open, Rename, Delete)
