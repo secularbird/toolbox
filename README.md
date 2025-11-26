@@ -428,21 +428,25 @@ toolbox/
 │   │   ├── WikiSidebar.vue       # Navigation and sections
 │   │   ├── WikiMetadata.vue      # Tags and revision history
 │   │   ├── RemindersApp.vue      # Full reminders application
-│   │   ├── DocumentImportModal.vue
-│   │   ├── TableInsertModal.vue
-│   │   ├── ReminderInsertModal.vue
-│   │   ├── ContextMenu.vue
-│   │   └── SectionNode.vue
+│   │   ├── DocumentImportModal.vue # Document import modal
+│   │   ├── TableInsertModal.vue  # Table insertion modal
+│   │   ├── ReminderInsertModal.vue # Reminder insertion modal
+│   │   ├── ContextMenu.vue       # Right-click context menu
+│   │   └── SectionNode.vue       # Recursive section tree node
 │   ├── composables/
-│   │   └── useWikiStore.ts       # Wiki state management
-│   ├── types/                    # TypeScript type definitions
-│   └── utils/                    # Utility functions
+│   │   ├── useWikiStore.ts       # Wiki state management
+│   │   └── useDocumentImport.ts  # Document import logic
+│   ├── types/
+│   │   └── plantuml-encoder.d.ts # PlantUML type definitions
+│   └── utils/
+│       ├── markdown.ts           # Markdown parsing utilities
+│       └── editorHistory.ts      # Editor undo/redo history
 │
 ├── src-tauri/                    # Rust Backend
 │   ├── src/
 │   │   ├── main.rs               # Entry point
 │   │   ├── lib.rs                # App setup, command registration
-│   │   ├── commands/mod.rs       # Reminder commands
+│   │   ├── commands/             # Reminder commands module
 │   │   ├── wiki_commands.rs      # Wiki & section commands
 │   │   ├── evidence_commands.rs  # Evidence/attachment commands
 │   │   ├── sync_commands.rs      # GitHub sync commands
@@ -457,13 +461,17 @@ toolbox/
 │   ├── Cargo.toml                # Rust dependencies
 │   └── tauri.conf.json           # Tauri configuration
 │
+├── public/                       # Static assets (icons)
 ├── notification.html             # Notification window (standalone)
 ├── index.html                    # Main window HTML
 ├── package.json                  # Node dependencies
 ├── vite.config.ts                # Vite configuration
 ├── tsconfig.json                 # TypeScript config
 ├── README.md                     # This file
-└── SOFTWARE_ARCHITECTURE.md      # Detailed architecture docs
+├── SOFTWARE_ARCHITECTURE.md      # Detailed architecture docs
+├── WIKI_FEATURE.md               # Wiki feature documentation
+├── GITHUB_SYNC_GUIDE.md          # GitHub sync setup guide
+└── 使用说明.md                   # Chinese usage guide
 ```
 
 ## Troubleshooting
