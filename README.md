@@ -144,8 +144,24 @@ The built application will be in `src-tauri/target/release/`.
 7. See [GitHub Sync Guide](GITHUB_SYNC_GUIDE.md) for detailed instructions
 
 ### Keyboard Shortcuts
+
+#### Wiki Editor
+- **Ctrl/Cmd + B**: Bold text
+- **Ctrl/Cmd + I**: Italic text  
+- **Ctrl/Cmd + K**: Insert link
+- **Ctrl/Cmd + Shift + T**: Insert table
+- **Ctrl/Cmd + Shift + R**: Insert reminder
+- **Ctrl/Cmd + Z**: Undo
+- **Ctrl/Cmd + Shift + Z**: Redo
+- **Ctrl/Cmd + Y**: Redo (alternative)
+- **Tab**: Indent
+
+#### Reminders
 - **Enter**: Quick add reminder
-- **F12**: Open DevTools (when debug enabled)
+
+#### General
+- **F12**: Open DevTools
+- **Ctrl+Shift+I / Cmd+Option+I**: Open DevTools (alternative)
 
 ## 🏗️ Architecture | 架构
 

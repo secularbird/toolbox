@@ -99,10 +99,20 @@ function formatDate(timestamp: number): string {
     <div class="metadata-section">
       <h3>Shortcuts</h3>
       <div class="shortcuts">
+        <div class="shortcut-group-label">Formatting</div>
         <div class="shortcut-row"><span>Cmd/Ctrl + B</span><span>Bold</span></div>
         <div class="shortcut-row"><span>Cmd/Ctrl + I</span><span>Italic</span></div>
         <div class="shortcut-row"><span>Cmd/Ctrl + K</span><span>Link</span></div>
-        <div class="shortcut-row"><span>Tab</span><span>Indent (spaces)</span></div>
+        <div class="shortcut-row"><span>Tab</span><span>Indent</span></div>
+        <div class="shortcut-group-label">Insert</div>
+        <div class="shortcut-row"><span>Cmd/Ctrl + Shift + T</span><span>Table</span></div>
+        <div class="shortcut-row"><span>Cmd/Ctrl + Shift + R</span><span>Reminder</span></div>
+        <div class="shortcut-group-label">History</div>
+        <div class="shortcut-row"><span>Cmd/Ctrl + Z</span><span>Undo</span></div>
+        <div class="shortcut-row"><span>Cmd/Ctrl + Shift + Z</span><span>Redo</span></div>
+        <div class="shortcut-row"><span>Cmd/Ctrl + Y</span><span>Redo</span></div>
+        <div class="shortcut-group-label">General</div>
+        <div class="shortcut-row"><span>F12</span><span>DevTools</span></div>
         <div class="shortcut-row"><span>Autosave</span><span>Every few seconds</span></div>
       </div>
     </div>
@@ -317,6 +327,20 @@ function formatDate(timestamp: number): string {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.shortcut-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+  margin-bottom: 2px;
+}
+
+.shortcut-group-label:first-child {
+  margin-top: 0;
 }
 
 .shortcut-row {
