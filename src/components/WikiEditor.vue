@@ -9,6 +9,16 @@ import { gfm } from '@milkdown/preset-gfm';
 import { history as milkdownHistory } from '@milkdown/plugin-history';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import type { Ctx } from '@milkdown/ctx';
+// ProseMirror table commands for WYSIWYG table editing
+import {
+  addRowBefore,
+  addRowAfter,
+  deleteRow,
+  addColumnBefore,
+  addColumnAfter,
+  deleteColumn,
+  isInTable
+} from 'prosemirror-tables';
 
 const props = defineProps<{
   modelValue: string;
@@ -36,6 +46,124 @@ const isMilkdownReady = ref(false);
 // Track if we're updating content to prevent loops
 let isUpdatingMilkdown = false;
 
+// Table toolbar state for WYSIWYG mode
+const showTableToolbar = ref(false);
+const tableToolbarPosition = ref({ top: 0, left: 0 });
+
+// Check if cursor is in a table and update toolbar visibility
+function updateTableToolbarState() {
+  if (!milkdownEditor.value || !isMilkdownReady.value || editorMode.value !== 'wysiwyg') {
+    showTableToolbar.value = false;
+    return;
+  }
+
+  try {
+    milkdownEditor.value.action((ctx: Ctx) => {
+      const view = ctx.get(editorViewCtx);
+      const { state } = view;
+      
+      if (isInTable(state)) {
+        showTableToolbar.value = true;
+        
+        // Position the toolbar near the selection
+        const { from } = state.selection;
+        const coords = view.coordsAtPos(from);
+        const editorRect = milkdownContainerRef.value?.getBoundingClientRect();
+        
+        if (editorRect) {
+          tableToolbarPosition.value = {
+            top: coords.top - editorRect.top - 40,
+            left: Math.max(0, coords.left - editorRect.left)
+          };
+        }
+      } else {
+        showTableToolbar.value = false;
+      }
+    });
+  } catch {
+    showTableToolbar.value = false;
+  }
+}
+
+// Table manipulation functions for WYSIWYG mode
+function handleAddRowAbove() {
+  if (!milkdownEditor.value || !isMilkdownReady.value) return;
+  
+  try {
+    milkdownEditor.value.action((ctx: Ctx) => {
+      const view = ctx.get(editorViewCtx);
+      addRowBefore(view.state, view.dispatch);
+    });
+  } catch (error) {
+    console.error('Error adding row above:', error);
+  }
+}
+
+function handleAddRowBelow() {
+  if (!milkdownEditor.value || !isMilkdownReady.value) return;
+  
+  try {
+    milkdownEditor.value.action((ctx: Ctx) => {
+      const view = ctx.get(editorViewCtx);
+      addRowAfter(view.state, view.dispatch);
+    });
+  } catch (error) {
+    console.error('Error adding row below:', error);
+  }
+}
+
+function handleDeleteRow() {
+  if (!milkdownEditor.value || !isMilkdownReady.value) return;
+  
+  try {
+    milkdownEditor.value.action((ctx: Ctx) => {
+      const view = ctx.get(editorViewCtx);
+      deleteRow(view.state, view.dispatch);
+    });
+  } catch (error) {
+    console.error('Error deleting row:', error);
+  }
+}
+
+function handleAddColumnLeft() {
+  if (!milkdownEditor.value || !isMilkdownReady.value) return;
+  
+  try {
+    milkdownEditor.value.action((ctx: Ctx) => {
+      const view = ctx.get(editorViewCtx);
+      addColumnBefore(view.state, view.dispatch);
+    });
+  } catch (error) {
+    console.error('Error adding column left:', error);
+  }
+}
+
+function handleAddColumnRight() {
+  if (!milkdownEditor.value || !isMilkdownReady.value) return;
+  
+  try {
+    milkdownEditor.value.action((ctx: Ctx) => {
+      const view = ctx.get(editorViewCtx);
+      addColumnAfter(view.state, view.dispatch);
+    });
+  } catch (error) {
+    console.error('Error adding column right:', error);
+  }
+}
+
+function handleDeleteColumn() {
+  if (!milkdownEditor.value || !isMilkdownReady.value) return;
+  
+  try {
+    milkdownEditor.value.action((ctx: Ctx) => {
+      const view = ctx.get(editorViewCtx);
+      deleteColumn(view.state, view.dispatch);
+    });
+  } catch (error) {
+    console.error('Error deleting column:', error);
+  }
+}
+
 // Initialize Milkdown editor
 async function initMilkdown(container: HTMLDivElement, content: string) {
   try {
@@ -48,6 +176,10 @@ async function initMilkdown(container: HTMLDivElement, content: string) {
           if (!isUpdatingMilkdown) {
             localValue.value = markdown;
           }
+        });
+        // Setup listener for selection changes to update table toolbar
+        ctx.get(listenerCtx).updated(() => {
+          updateTableToolbarState();
         });
       })
       .use(commonmark)
@@ -503,6 +635,61 @@ defineExpose({ applyFormat, insertText, editorMode });
       v-else
       class="milkdown-wysiwyg-container"
     >
+      <!-- Table toolbar for WYSIWYG mode -->
+      <div 
+        v-if="showTableToolbar"
+        class="table-toolbar"
+        :style="{ top: tableToolbarPosition.top + 'px', left: tableToolbarPosition.left + 'px' }"
+      >
+        <div class="table-toolbar-group">
+          <button 
+            class="table-toolbar-btn" 
+            @click="handleAddRowAbove"
+            title="Insert row above"
+          >
+            ⬆️ Row
+          </button>
+          <button 
+            class="table-toolbar-btn" 
+            @click="handleAddRowBelow"
+            title="Insert row below"
+          >
+            ⬇️ Row
+          </button>
+          <button 
+            class="table-toolbar-btn" 
+            @click="handleAddColumnLeft"
+            title="Insert column left"
+          >
+            ⬅️ Col
+          </button>
+          <button 
+            class="table-toolbar-btn" 
+            @click="handleAddColumnRight"
+            title="Insert column right"
+          >
+            ➡️ Col
+          </button>
+        </div>
+        <div class="table-toolbar-divider"></div>
+        <div class="table-toolbar-group">
+          <button 
+            class="table-toolbar-btn danger" 
+            @click="handleDeleteRow"
+            title="Delete row"
+          >
+            🗑️ Row
+          </button>
+          <button 
+            class="table-toolbar-btn danger" 
+            @click="handleDeleteColumn"
+            title="Delete column"
+          >
+            🗑️ Col
+          </button>
+        </div>
+      </div>
+      
       <!-- Milkdown editor container -->
       <div 
         ref="milkdownContainerRef" 
@@ -603,6 +790,55 @@ defineExpose({ applyFormat, insertText, editorMode });
   background: var(--border-color);
 }
 
+/* Table toolbar for WYSIWYG mode */
+.table-toolbar {
+  position: absolute;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--toolbar-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.table-toolbar-group {
+  display: flex;
+  gap: 2px;
+}
+
+.table-toolbar-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.table-toolbar-btn:hover {
+  background: var(--btn-hover-bg);
+  border-color: var(--primary-color);
+}
+
+.table-toolbar-btn.danger:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+.table-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-color);
+  margin: 0 4px;
+}
+
 .editor-textarea {
   flex: 1;
   width: 100%;
@@ -628,6 +864,7 @@ defineExpose({ applyFormat, insertText, editorMode });
   display: flex;
   min-height: 0;
   overflow: auto;
+  position: relative;
 }
 
 .milkdown-editor {
@@ -801,6 +1038,12 @@ defineExpose({ applyFormat, insertText, editorMode });
     --error-color: #ff453a;
     --error-bg: rgba(255, 69, 58, 0.1);
     --preview-bg: #0f0f0f;
+  }
+
+  .table-toolbar-btn.danger:hover {
+    background: rgba(255, 69, 58, 0.2);
+    border-color: #ff453a;
+    color: #ff453a;
   }
 }
 
