@@ -3,8 +3,11 @@ use log::{info, debug, error};
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 use std::time::Duration;
 use tokio::time::sleep;
+use chrono::{Local, Duration as ChronoDuration};
 
 const CHECK_INTERVAL_SECONDS: u64 = 30;
+// Default reminder window: show notifications for reminders due within 1 hour
+const REMINDER_WINDOW_HOURS: i64 = 1;
 
 // Notification service is only available on desktop platforms
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -46,17 +49,36 @@ pub async fn start_notification_service(_pool: SqlitePool, _app: AppHandle) {
 
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 async fn check_due_reminders(pool: &SqlitePool) -> Result<usize, sqlx::Error> {
-    debug!("Checking for incomplete reminders");
+    debug!("Checking for incomplete reminders due within {} hour(s)", REMINDER_WINDOW_HOURS);
     
+    // Get current time and the time window (1 hour from now)
+    let now = Local::now();
+    let reminder_window_end = now + ChronoDuration::hours(REMINDER_WINDOW_HOURS);
+    
+    // Format times for SQLite comparison
+    let now_str = now.format("%Y-%m-%dT%H:%M").to_string();
+    let window_end_str = reminder_window_end.format("%Y-%m-%dT%H:%M").to_string();
+    
+    debug!("Checking reminders between {} and {}", now_str, window_end_str);
+    
+    // Count reminders that are:
+    // 1. Not completed
+    // 2. Due time is within the next hour (from now to now + 1 hour)
     let count: (i64,) = sqlx::query_as(
         r#"
         SELECT COUNT(*)
         FROM reminders
         WHERE completed = 0
+          AND time >= ?
+          AND time <= ?
         "#
     )
+    .bind(&now_str)
+    .bind(&window_end_str)
     .fetch_one(pool)
     .await?;
+    
+    debug!("Found {} reminders due within the reminder window", count.0);
     
     Ok(count.0 as usize)
 }
