@@ -416,7 +416,8 @@ const diagramMenuRef = ref<HTMLDivElement | null>(null);
 
 // Close diagram menu when clicking outside
 function handleClickOutside(event: MouseEvent) {
-  if (diagramMenuRef.value && !diagramMenuRef.value.contains(event.target as Node)) {
+  const target = event.target;
+  if (target && diagramMenuRef.value && !diagramMenuRef.value.contains(target as Node)) {
     showDiagramMenu.value = false;
   }
 }
@@ -813,29 +814,38 @@ defineExpose({ applyFormat, insertText, editorMode });
           @click.stop="showDiagramMenu = !showDiagramMenu" 
           title="Insert Diagram" 
           class="toolbar-btn diagram-btn"
+          aria-label="Insert Diagram"
+          aria-haspopup="true"
+          :aria-expanded="showDiagramMenu"
+          id="diagram-menu-button"
         >
           📊 Diagram ▾
         </button>
-        <div v-if="showDiagramMenu" class="diagram-dropdown">
-          <div class="diagram-section">
-            <div class="diagram-section-title">🌊 Mermaid Diagrams</div>
-            <button @click="insertMermaidDiagram('flowchart')" class="diagram-option">Flowchart</button>
-            <button @click="insertMermaidDiagram('sequence')" class="diagram-option">Sequence Diagram</button>
-            <button @click="insertMermaidDiagram('class')" class="diagram-option">Class Diagram</button>
-            <button @click="insertMermaidDiagram('state')" class="diagram-option">State Diagram</button>
-            <button @click="insertMermaidDiagram('er')" class="diagram-option">ER Diagram</button>
-            <button @click="insertMermaidDiagram('gantt')" class="diagram-option">Gantt Chart</button>
-            <button @click="insertMermaidDiagram('pie')" class="diagram-option">Pie Chart</button>
+        <div 
+          v-if="showDiagramMenu" 
+          class="diagram-dropdown"
+          role="menu"
+          aria-labelledby="diagram-menu-button"
+        >
+          <div class="diagram-section" role="group" aria-label="Mermaid Diagrams">
+            <div class="diagram-section-title" id="mermaid-section-label">🌊 Mermaid Diagrams</div>
+            <button @click="insertMermaidDiagram('flowchart')" class="diagram-option" role="menuitem">Flowchart</button>
+            <button @click="insertMermaidDiagram('sequence')" class="diagram-option" role="menuitem">Sequence Diagram</button>
+            <button @click="insertMermaidDiagram('class')" class="diagram-option" role="menuitem">Class Diagram</button>
+            <button @click="insertMermaidDiagram('state')" class="diagram-option" role="menuitem">State Diagram</button>
+            <button @click="insertMermaidDiagram('er')" class="diagram-option" role="menuitem">ER Diagram</button>
+            <button @click="insertMermaidDiagram('gantt')" class="diagram-option" role="menuitem">Gantt Chart</button>
+            <button @click="insertMermaidDiagram('pie')" class="diagram-option" role="menuitem">Pie Chart</button>
           </div>
-          <div class="diagram-section-divider"></div>
-          <div class="diagram-section">
-            <div class="diagram-section-title">🌱 PlantUML Diagrams</div>
-            <button @click="insertPlantUMLDiagram('sequence')" class="diagram-option">Sequence Diagram</button>
-            <button @click="insertPlantUMLDiagram('class')" class="diagram-option">Class Diagram</button>
-            <button @click="insertPlantUMLDiagram('usecase')" class="diagram-option">Use Case Diagram</button>
-            <button @click="insertPlantUMLDiagram('activity')" class="diagram-option">Activity Diagram</button>
-            <button @click="insertPlantUMLDiagram('component')" class="diagram-option">Component Diagram</button>
-            <button @click="insertPlantUMLDiagram('state')" class="diagram-option">State Diagram</button>
+          <div class="diagram-section-divider" role="separator"></div>
+          <div class="diagram-section" role="group" aria-label="PlantUML Diagrams">
+            <div class="diagram-section-title" id="plantuml-section-label">🌱 PlantUML Diagrams</div>
+            <button @click="insertPlantUMLDiagram('sequence')" class="diagram-option" role="menuitem">Sequence Diagram</button>
+            <button @click="insertPlantUMLDiagram('class')" class="diagram-option" role="menuitem">Class Diagram</button>
+            <button @click="insertPlantUMLDiagram('usecase')" class="diagram-option" role="menuitem">Use Case Diagram</button>
+            <button @click="insertPlantUMLDiagram('activity')" class="diagram-option" role="menuitem">Activity Diagram</button>
+            <button @click="insertPlantUMLDiagram('component')" class="diagram-option" role="menuitem">Component Diagram</button>
+            <button @click="insertPlantUMLDiagram('state')" class="diagram-option" role="menuitem">State Diagram</button>
           </div>
         </div>
       </div>
