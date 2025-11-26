@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { watch, nextTick, onMounted, ref } from 'vue';
+import { watch, nextTick, onMounted, onBeforeUnmount, ref } from 'vue';
 import { renderMarkdown } from '../utils/markdown';
 import mermaid from 'mermaid';
 
 const props = defineProps<{
   content: string;
+}>();
+
+const emit = defineEmits<{
+  'editTable': [tableIndex: number];
 }>();
 
 const renderedContent = ref('');
@@ -121,11 +125,27 @@ watch(renderedContent, async () => {
     renderingInProgress = false;
   }
 });
+
+// Handle clicks on tables for editing
+function handlePreviewClick(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  const table = target.closest('table.editable-table');
+  if (table) {
+    const tableIndex = parseInt(table.getAttribute('data-table-index') || '0', 10);
+    emit('editTable', tableIndex);
+  }
+}
+
+onBeforeUnmount(() => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+  }
+});
 </script>
 
 <template>
   <div class="wiki-preview">
-    <div class="preview-content" ref="previewContentRef" v-html="renderedContent"></div>
+    <div class="preview-content" ref="previewContentRef" v-html="renderedContent" @click="handlePreviewClick"></div>
   </div>
 </template>
 
@@ -233,6 +253,36 @@ watch(renderedContent, async () => {
   border-collapse: collapse;
   width: 100%;
   margin-bottom: 16px;
+}
+
+.preview-content :deep(table.editable-table) {
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.1s;
+  position: relative;
+}
+
+.preview-content :deep(table.editable-table:hover) {
+  box-shadow: 0 0 0 2px var(--primary-color, #007aff);
+  transform: translateY(-1px);
+}
+
+.preview-content :deep(table.editable-table::after) {
+  content: '✏️ Click to edit';
+  position: absolute;
+  top: -24px;
+  right: 0;
+  font-size: 11px;
+  color: var(--primary-color, #007aff);
+  background: var(--table-header-bg, #f5f5f7);
+  padding: 2px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.preview-content :deep(table.editable-table:hover::after) {
+  opacity: 1;
 }
 
 .preview-content :deep(table th),

@@ -11,6 +11,9 @@ const emit = defineEmits<{
   insert: [markdown: string];
 }>();
 
+// Determine if we're editing an existing table
+const isEditing = computed(() => Boolean(props.initialMarkdown && props.initialMarkdown.trim()));
+
 // Edit mode: 'quick' for quick setup, 'visual' for visual WYSIWYG editing
 const editMode = ref<'quick' | 'visual'>('visual');
 
@@ -84,8 +87,8 @@ initializeTable();
   <div class="modal-overlay" @click.self="handleCancel">
     <div class="modal-content" :class="{ 'wide-modal': editMode === 'visual' }">
       <div class="modal-header">
-        <h2>{{ editMode === 'quick' ? 'Insert Table' : 'Edit Table' }}</h2>
-        <div class="mode-toggle">
+        <h2>{{ isEditing ? 'Edit Table' : (editMode === 'quick' ? 'Insert Table' : 'Edit Table') }}</h2>
+        <div class="mode-toggle" v-if="!isEditing">
           <button 
             :class="['mode-btn', { active: editMode === 'quick' }]"
             @click="editMode = 'quick'"
@@ -105,8 +108,8 @@ initializeTable();
       </div>
       
       <div class="modal-body">
-        <!-- Quick Mode -->
-        <template v-if="editMode === 'quick'">
+        <!-- Quick Mode (only for new tables) -->
+        <template v-if="editMode === 'quick' && !isEditing">
           <div class="form-group">
             <label>
               Rows:
@@ -148,7 +151,7 @@ initializeTable();
       
       <div class="modal-footer">
         <button class="btn secondary" @click="handleCancel">Cancel</button>
-        <button class="btn primary" @click="handleInsert">Insert Table</button>
+        <button class="btn primary" @click="handleInsert">{{ isEditing ? 'Update Table' : 'Insert Table' }}</button>
       </div>
     </div>
   </div>
