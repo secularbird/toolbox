@@ -1,7 +1,14 @@
 import { marked, type RendererObject } from 'marked';
 import hljs from 'highlight.js';
 import plantumlEncoder from 'plantuml-encoder';
-import { categoryIcons, frequencyLabels, type ReminderData } from './reminderConstants';
+import { 
+  categoryIcons, 
+  frequencyLabels, 
+  type ReminderData,
+  REMINDER_DATA_PATTERN,
+  REMINDER_LEGACY_PATTERN,
+  decodeReminderData
+} from './reminderConstants';
 
 // Generate a unique ID for each diagram using crypto.randomUUID with fallback
 export function generateDiagramId(type: string): string {
@@ -51,18 +58,15 @@ export function resetTableCounter(): void {
 // Supports both new format (base64 inline code) and legacy format (HTML comment)
 function extractReminderData(html: string): ReminderData | null {
   // Try new format first: `[reminder:base64EncodedData]`
-  const inlineCodeMatch = html.match(/\[reminder:([A-Za-z0-9+/=]+)\]/);
+  const inlineCodeMatch = html.match(REMINDER_DATA_PATTERN);
   if (inlineCodeMatch) {
-    try {
-      const decoded = atob(inlineCodeMatch[1]);
-      return JSON.parse(decoded) as ReminderData;
-    } catch {
-      // Fall through to try legacy format
-    }
+    const data = decodeReminderData(inlineCodeMatch[1]);
+    if (data) return data;
+    // Fall through to try legacy format if decode fails
   }
   
   // Try legacy format: <!-- reminder-data:jsonData -->
-  const commentMatch = html.match(/<!--\s*reminder-data:([\s\S]*?)-->/);
+  const commentMatch = html.match(REMINDER_LEGACY_PATTERN);
   if (commentMatch) {
     try {
       return JSON.parse(commentMatch[1].trim()) as ReminderData;

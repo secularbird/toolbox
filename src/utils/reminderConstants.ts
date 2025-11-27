@@ -38,3 +38,41 @@ export interface ReminderData {
   frequency: string;
   time: string;
 }
+
+// Reminder data format constants for encoding/decoding
+// Pattern to match base64-encoded reminder data in inline code format
+export const REMINDER_DATA_PATTERN = /\[reminder:([A-Za-z0-9+/]+=*)\]/;
+
+// Prefix used in the inline code format
+export const REMINDER_DATA_PREFIX = '[reminder:';
+export const REMINDER_DATA_SUFFIX = ']';
+
+// Legacy HTML comment pattern for backward compatibility
+export const REMINDER_LEGACY_PATTERN = /<!--\s*reminder-data:([\s\S]*?)-->/;
+
+/**
+ * Encode reminder data to base64 string
+ */
+export function encodeReminderData(data: ReminderData): string {
+  return btoa(JSON.stringify(data));
+}
+
+/**
+ * Decode reminder data from base64 string
+ * Returns null if decoding fails
+ */
+export function decodeReminderData(encoded: string): ReminderData | null {
+  try {
+    const decoded = atob(encoded);
+    return JSON.parse(decoded) as ReminderData;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Format reminder data as inline code marker
+ */
+export function formatReminderMarker(data: ReminderData): string {
+  return `${REMINDER_DATA_PREFIX}${encodeReminderData(data)}${REMINDER_DATA_SUFFIX}`;
+}

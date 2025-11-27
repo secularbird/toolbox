@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick, shallowRef } from 'vue';
 import { wrapSelection, insertAtCursor, markdownFormats, extractMarkdownTables, getMermaidInkUrl, generateDiagramId, escapeHtml } from '../utils/markdown';
-import { categoryIcons, frequencyLabels } from '../utils/reminderConstants';
+import { categoryIcons, frequencyLabels, REMINDER_DATA_PATTERN, REMINDER_LEGACY_PATTERN, decodeReminderData } from '../utils/reminderConstants';
 import { EditorHistory } from '../utils/editorHistory';
 import plantumlEncoder from 'plantuml-encoder';
 // Milkdown imports
@@ -357,19 +357,14 @@ function styleRemindersInWysiwyg() {
     
     // Try new format first: [reminder:base64EncodedData]
     let data = null;
-    const inlineCodeMatch = innerHTML.match(/\[reminder:([A-Za-z0-9+/=]+)\]/);
+    const inlineCodeMatch = innerHTML.match(REMINDER_DATA_PATTERN);
     if (inlineCodeMatch) {
-      try {
-        const decoded = atob(inlineCodeMatch[1]);
-        data = JSON.parse(decoded);
-      } catch {
-        // Fall through to try legacy format
-      }
+      data = decodeReminderData(inlineCodeMatch[1]);
     }
     
     // Try legacy format: <!-- reminder-data:jsonData -->
     if (!data) {
-      const commentMatch = innerHTML.match(/<!--\s*reminder-data:([\s\S]*?)-->/);
+      const commentMatch = innerHTML.match(REMINDER_LEGACY_PATTERN);
       if (commentMatch) {
         try {
           data = JSON.parse(commentMatch[1].trim());
