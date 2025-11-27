@@ -346,26 +346,40 @@ function styleRemindersInWysiwyg() {
     const textContent = blockquote.textContent || '';
     
     // Check if this blockquote contains reminder content
-    // The reminder pattern: starts with "🔔 Reminder:" and contains reminder-data comment
+    // The reminder pattern: starts with "🔔 Reminder:" and contains reminder data
     if (!textContent.includes('🔔 Reminder:')) {
       blockquote.setAttribute('data-reminder-processed', 'false');
       return;
     }
     
-    // Try to extract reminder data from the HTML content
+    // Try to extract reminder data using the new format (base64 inline code) or legacy format (HTML comment)
     const innerHTML = blockquote.innerHTML;
-    const commentMatch = innerHTML.match(/<!--\s*reminder-data:([\s\S]*?)-->/);
     
-    if (!commentMatch) {
-      blockquote.setAttribute('data-reminder-processed', 'false');
-      return;
+    // Try new format first: [reminder:base64EncodedData]
+    let data = null;
+    const inlineCodeMatch = innerHTML.match(/\[reminder:([A-Za-z0-9+/=]+)\]/);
+    if (inlineCodeMatch) {
+      try {
+        const decoded = atob(inlineCodeMatch[1]);
+        data = JSON.parse(decoded);
+      } catch {
+        // Fall through to try legacy format
+      }
     }
     
-    // Parse the JSON data and render the card
-    let data;
-    try {
-      data = JSON.parse(commentMatch[1].trim());
-    } catch {
+    // Try legacy format: <!-- reminder-data:jsonData -->
+    if (!data) {
+      const commentMatch = innerHTML.match(/<!--\s*reminder-data:([\s\S]*?)-->/);
+      if (commentMatch) {
+        try {
+          data = JSON.parse(commentMatch[1].trim());
+        } catch {
+          // Mark as processed but not a reminder
+        }
+      }
+    }
+    
+    if (!data) {
       blockquote.setAttribute('data-reminder-processed', 'false');
       return;
     }

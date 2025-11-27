@@ -48,16 +48,30 @@ export function resetTableCounter(): void {
 }
 
 // Extract reminder data from blockquote content
+// Supports both new format (base64 inline code) and legacy format (HTML comment)
 function extractReminderData(html: string): ReminderData | null {
-  // Look for the reminder-data comment pattern in the raw HTML
-  const commentMatch = html.match(/<!--\s*reminder-data:([\s\S]*?)-->/);
-  if (!commentMatch) return null;
-  
-  try {
-    return JSON.parse(commentMatch[1].trim()) as ReminderData;
-  } catch {
-    return null;
+  // Try new format first: `[reminder:base64EncodedData]`
+  const inlineCodeMatch = html.match(/\[reminder:([A-Za-z0-9+/=]+)\]/);
+  if (inlineCodeMatch) {
+    try {
+      const decoded = atob(inlineCodeMatch[1]);
+      return JSON.parse(decoded) as ReminderData;
+    } catch {
+      // Fall through to try legacy format
+    }
   }
+  
+  // Try legacy format: <!-- reminder-data:jsonData -->
+  const commentMatch = html.match(/<!--\s*reminder-data:([\s\S]*?)-->/);
+  if (commentMatch) {
+    try {
+      return JSON.parse(commentMatch[1].trim()) as ReminderData;
+    } catch {
+      return null;
+    }
+  }
+  
+  return null;
 }
 
 // Render a reminder as a styled visual component

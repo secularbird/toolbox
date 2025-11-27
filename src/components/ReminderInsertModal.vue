@@ -57,7 +57,17 @@ async function handleInsert() {
     const frequency = frequencies.find(f => f.value === reminderFrequency.value);
     
     // Generate markdown with reminder link
+    // Using inline code with base64-encoded JSON data to preserve metadata through Milkdown parsing
     const time = new Date(reminderTime.value).toLocaleString();
+    const reminderData = {
+      id: reminderId,
+      title: reminderTitle.value,
+      description: reminderDescription.value.trim() || 'Created from Wiki',
+      category: reminderCategory.value,
+      frequency: reminderFrequency.value,
+      time: reminderTime.value
+    };
+    const encodedData = btoa(JSON.stringify(reminderData));
     const markdown = `
 > **🔔 Reminder: ${reminderTitle.value}**
 > 
@@ -65,14 +75,7 @@ async function handleInsert() {
 > ${frequency?.icon} Frequency: ${frequency?.label}  
 > ⏰ Time: ${time}
 > 
-> <!-- reminder-data:${JSON.stringify({
-  id: reminderId,
-  title: reminderTitle.value,
-  description: reminderDescription.value.trim() || 'Created from Wiki',
-  category: reminderCategory.value,
-  frequency: reminderFrequency.value,
-  time: reminderTime.value
-})} -->
+> \`[reminder:${encodedData}]\`
 `.trim();
 
     emit('insert', markdown, reminderId);
