@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick, shallowRef } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats, extractMarkdownTables, getMermaidInkUrl, generateDiagramId } from '../utils/markdown';
+import { wrapSelection, insertAtCursor, markdownFormats, extractMarkdownTables, getMermaidInkUrl, generateDiagramId, escapeHtml } from '../utils/markdown';
+import { categoryIcons, frequencyLabels } from '../utils/reminderConstants';
 import { EditorHistory } from '../utils/editorHistory';
 import plantumlEncoder from 'plantuml-encoder';
 // Milkdown imports
@@ -218,8 +219,11 @@ async function initMilkdown(container: HTMLDivElement, content: string) {
           if (!isUpdatingMilkdown) {
             localValue.value = markdown;
           }
-          // Render diagrams after content changes
-          nextTick(() => renderDiagramsInWysiwyg());
+          // Render diagrams and style reminders after content changes
+          nextTick(() => {
+            renderDiagramsInWysiwyg();
+            styleRemindersInWysiwyg();
+          });
         });
         // Setup listener for selection changes to update table toolbar
         ctx.get(listenerCtx).updated(() => {
@@ -235,9 +239,10 @@ async function initMilkdown(container: HTMLDivElement, content: string) {
     milkdownEditor.value = editor;
     isMilkdownReady.value = true;
     
-    // Render diagrams after initial load
+    // Render diagrams and style reminders after initial load
     await nextTick();
     renderDiagramsInWysiwyg();
+    styleRemindersInWysiwyg();
     
     return editor;
   } catch (error) {
@@ -324,6 +329,91 @@ function renderDiagramsInWysiwyg() {
         console.error('PlantUML rendering error:', err);
       }
     }
+  });
+}
+
+// Style reminder blockquotes in WYSIWYG mode
+// Converts blockquotes with reminder data into styled reminder cards
+function styleRemindersInWysiwyg() {
+  if (!milkdownContainerRef.value || editorMode.value !== 'wysiwyg') return;
+  
+  // Find all blockquotes that haven't been processed yet
+  const blockquotes = milkdownContainerRef.value.querySelectorAll(
+    'blockquote:not([data-reminder-processed])'
+  );
+  
+  blockquotes.forEach((blockquote) => {
+    const textContent = blockquote.textContent || '';
+    
+    // Check if this blockquote contains reminder content
+    // The reminder pattern: starts with "🔔 Reminder:" and contains reminder-data comment
+    if (!textContent.includes('🔔 Reminder:')) {
+      blockquote.setAttribute('data-reminder-processed', 'false');
+      return;
+    }
+    
+    // Try to extract reminder data from the HTML content
+    const innerHTML = blockquote.innerHTML;
+    const commentMatch = innerHTML.match(/<!--\s*reminder-data:([\s\S]*?)-->/);
+    
+    if (!commentMatch) {
+      blockquote.setAttribute('data-reminder-processed', 'false');
+      return;
+    }
+    
+    // Parse the JSON data and render the card
+    let data;
+    try {
+      data = JSON.parse(commentMatch[1].trim());
+    } catch {
+      blockquote.setAttribute('data-reminder-processed', 'false');
+      return;
+    }
+    
+    const category = categoryIcons[data.category] || categoryIcons.other;
+    const frequency = frequencyLabels[data.frequency] || frequencyLabels.once;
+    const time = new Date(data.time).toLocaleString();
+    const isPast = new Date(data.time) < new Date();
+    
+    // Create a styled reminder card
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'reminder-card-wysiwyg';
+    cardDiv.setAttribute('data-reminder-id', String(data.id));
+    cardDiv.innerHTML = `
+      <div class="reminder-card-header">
+        <span class="reminder-icon">🔔</span>
+        <span class="reminder-title">${escapeHtml(data.title)}</span>
+        ${isPast ? '<span class="reminder-badge past">Past</span>' : '<span class="reminder-badge upcoming">Upcoming</span>'}
+      </div>
+      <div class="reminder-card-body">
+        <div class="reminder-meta-item">
+          <span class="reminder-meta-icon">${category.icon}</span>
+          <span class="reminder-meta-label">Category:</span>
+          <span class="reminder-meta-value" style="color: ${category.color}">${category.name}</span>
+        </div>
+        <div class="reminder-meta-item">
+          <span class="reminder-meta-icon">${frequency.icon}</span>
+          <span class="reminder-meta-label">Frequency:</span>
+          <span class="reminder-meta-value">${frequency.label}</span>
+        </div>
+        <div class="reminder-meta-item">
+          <span class="reminder-meta-icon">⏰</span>
+          <span class="reminder-meta-label">Time:</span>
+          <span class="reminder-meta-value ${isPast ? 'past' : ''}">${time}</span>
+        </div>
+        ${data.description && data.description !== 'Created from Wiki' ? `
+        <div class="reminder-description">
+          <span class="reminder-meta-icon">📝</span>
+          <span>${escapeHtml(data.description)}</span>
+        </div>
+        ` : ''}
+      </div>
+    `;
+    
+    // Insert the card after the blockquote and hide the original using CSS class
+    blockquote.setAttribute('data-reminder-processed', 'true');
+    blockquote.classList.add('reminder-blockquote-hidden');
+    blockquote.insertAdjacentElement('afterend', cardDiv);
   });
 }
 
@@ -1468,6 +1558,111 @@ defineExpose({ applyFormat, insertText, editorMode });
   background: var(--btn-hover-bg);
 }
 
+/* Reminder Card styles for WYSIWYG mode */
+.milkdown-editor :deep(.reminder-card-wysiwyg) {
+  margin: 16px 0;
+  padding: 0;
+  background: var(--reminder-bg);
+  border-radius: 12px;
+  border: 1px solid var(--reminder-border);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.milkdown-editor :deep(.reminder-card-wysiwyg:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Hide the original blockquote when reminder card is displayed */
+.milkdown-editor :deep(.reminder-blockquote-hidden) {
+  display: none !important;
+}
+
+.milkdown-editor :deep(.reminder-card-header) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--reminder-header-bg);
+  border-bottom: 1px solid var(--reminder-border);
+}
+
+.milkdown-editor :deep(.reminder-icon) {
+  font-size: 1.25rem;
+}
+
+.milkdown-editor :deep(.reminder-title) {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.milkdown-editor :deep(.reminder-badge) {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.milkdown-editor :deep(.reminder-badge.upcoming) {
+  background: var(--badge-upcoming-bg);
+  color: var(--badge-upcoming-color);
+}
+
+.milkdown-editor :deep(.reminder-badge.past) {
+  background: var(--badge-past-bg);
+  color: var(--badge-past-color);
+}
+
+.milkdown-editor :deep(.reminder-card-body) {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.milkdown-editor :deep(.reminder-meta-item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.milkdown-editor :deep(.reminder-meta-icon) {
+  width: 20px;
+  text-align: center;
+}
+
+.milkdown-editor :deep(.reminder-meta-label) {
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.milkdown-editor :deep(.reminder-meta-value) {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.milkdown-editor :deep(.reminder-meta-value.past) {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+.milkdown-editor :deep(.reminder-description) {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--reminder-border);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
   .wiki-editor {
@@ -1490,6 +1685,14 @@ defineExpose({ applyFormat, insertText, editorMode });
     --danger-color: #ff453a;
     --danger-bg: rgba(255, 69, 58, 0.2);
     --transition-fast: 0.2s;
+    /* Reminder card variables */
+    --reminder-bg: #2c2c2e;
+    --reminder-border: #48484a;
+    --reminder-header-bg: #38383a;
+    --badge-upcoming-bg: rgba(10, 132, 255, 0.2);
+    --badge-upcoming-color: #0a84ff;
+    --badge-past-bg: rgba(152, 152, 157, 0.2);
+    --badge-past-color: #98989d;
   }
 }
 
@@ -1515,6 +1718,14 @@ defineExpose({ applyFormat, insertText, editorMode });
     --danger-color: #dc2626;
     --danger-bg: #fee2e2;
     --transition-fast: 0.2s;
+    /* Reminder card variables */
+    --reminder-bg: #ffffff;
+    --reminder-border: #e5e5ea;
+    --reminder-header-bg: #f5f5f7;
+    --badge-upcoming-bg: rgba(0, 122, 255, 0.1);
+    --badge-upcoming-color: #007aff;
+    --badge-past-bg: rgba(134, 134, 139, 0.1);
+    --badge-past-color: #86868b;
   }
 }
 </style>

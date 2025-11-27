@@ -1,6 +1,7 @@
 import { marked, type RendererObject } from 'marked';
 import hljs from 'highlight.js';
 import plantumlEncoder from 'plantuml-encoder';
+import { categoryIcons, frequencyLabels, type ReminderData } from './reminderConstants';
 
 // Generate a unique ID for each diagram using crypto.randomUUID with fallback
 export function generateDiagramId(type: string): string {
@@ -27,7 +28,7 @@ export function getMermaidInkUrl(mermaidCode: string, theme: 'default' | 'dark' 
 }
 
 // Efficient HTML escaping function using string replacement
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   const escapeMap: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
@@ -46,7 +47,72 @@ export function resetTableCounter(): void {
   tableIndex = 0;
 }
 
+// Extract reminder data from blockquote content
+function extractReminderData(html: string): ReminderData | null {
+  // Look for the reminder-data comment pattern in the raw HTML
+  const commentMatch = html.match(/<!--\s*reminder-data:([\s\S]*?)-->/);
+  if (!commentMatch) return null;
+  
+  try {
+    return JSON.parse(commentMatch[1].trim()) as ReminderData;
+  } catch {
+    return null;
+  }
+}
+
+// Render a reminder as a styled visual component
+function renderReminderCard(data: ReminderData): string {
+  const category = categoryIcons[data.category] || categoryIcons.other;
+  const frequency = frequencyLabels[data.frequency] || frequencyLabels.once;
+  const time = new Date(data.time).toLocaleString();
+  const isPast = new Date(data.time) < new Date();
+  
+  return `<div class="reminder-card" data-reminder-id="${data.id}">
+    <div class="reminder-card-header">
+      <span class="reminder-icon">🔔</span>
+      <span class="reminder-title">${escapeHtml(data.title)}</span>
+      ${isPast ? '<span class="reminder-badge past">Past</span>' : '<span class="reminder-badge upcoming">Upcoming</span>'}
+    </div>
+    <div class="reminder-card-body">
+      <div class="reminder-meta-item">
+        <span class="reminder-meta-icon">${category.icon}</span>
+        <span class="reminder-meta-label">Category:</span>
+        <span class="reminder-meta-value" style="color: ${category.color}">${category.name}</span>
+      </div>
+      <div class="reminder-meta-item">
+        <span class="reminder-meta-icon">${frequency.icon}</span>
+        <span class="reminder-meta-label">Frequency:</span>
+        <span class="reminder-meta-value">${frequency.label}</span>
+      </div>
+      <div class="reminder-meta-item">
+        <span class="reminder-meta-icon">⏰</span>
+        <span class="reminder-meta-label">Time:</span>
+        <span class="reminder-meta-value ${isPast ? 'past' : ''}">${time}</span>
+      </div>
+      ${data.description && data.description !== 'Created from Wiki' ? `
+      <div class="reminder-description">
+        <span class="reminder-meta-icon">📝</span>
+        <span>${escapeHtml(data.description)}</span>
+      </div>
+      ` : ''}
+    </div>
+  </div>`;
+}
+
 const renderer: RendererObject = {
+  // Custom blockquote renderer to detect and render reminders
+  blockquote({ raw }) {
+    // Check if this blockquote contains reminder data first to avoid unnecessary parsing
+    const reminderData = extractReminderData(raw);
+    if (reminderData) {
+      return renderReminderCard(reminderData);
+    }
+    
+    // Otherwise, render as a normal blockquote by parsing the inner content
+    const innerContent = raw.replace(/^>/gm, '').trim();
+    const renderedContent = marked.parse(innerContent) as string;
+    return `<blockquote>${renderedContent}</blockquote>`;
+  },
   table({ header, rows }) {
     const currentIndex = tableIndex++;
     const headerHtml = `<thead><tr>${header.map(cell => `<th>${cell.text}</th>`).join('')}</tr></thead>`;
