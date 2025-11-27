@@ -244,6 +244,106 @@ onBeforeUnmount(() => {
   font-family: monospace;
 }
 
+/* Reminder Card styles */
+.preview-content :deep(.reminder-card) {
+  margin: 16px 0;
+  padding: 0;
+  background: var(--reminder-bg);
+  border-radius: 12px;
+  border: 1px solid var(--reminder-border);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.preview-content :deep(.reminder-card:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.preview-content :deep(.reminder-card-header) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--reminder-header-bg);
+  border-bottom: 1px solid var(--reminder-border);
+}
+
+.preview-content :deep(.reminder-icon) {
+  font-size: 1.25rem;
+}
+
+.preview-content :deep(.reminder-title) {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.preview-content :deep(.reminder-badge) {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.preview-content :deep(.reminder-badge.upcoming) {
+  background: var(--badge-upcoming-bg);
+  color: var(--badge-upcoming-color);
+}
+
+.preview-content :deep(.reminder-badge.past) {
+  background: var(--badge-past-bg);
+  color: var(--badge-past-color);
+}
+
+.preview-content :deep(.reminder-card-body) {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preview-content :deep(.reminder-meta-item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.preview-content :deep(.reminder-meta-icon) {
+  width: 20px;
+  text-align: center;
+}
+
+.preview-content :deep(.reminder-meta-label) {
+  color: var(--text-secondary);
+  min-width: 80px;
+}
+
+.preview-content :deep(.reminder-meta-value) {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.preview-content :deep(.reminder-meta-value.past) {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+.preview-content :deep(.reminder-description) {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--reminder-border);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
   .wiki-preview {
@@ -258,6 +358,14 @@ onBeforeUnmount(() => {
     --diagram-bg: #2c2c2e;
     --error-color: #ff453a;
     --error-bg: rgba(255, 69, 58, 0.1);
+    /* Reminder card variables */
+    --reminder-bg: #2c2c2e;
+    --reminder-border: #48484a;
+    --reminder-header-bg: #38383a;
+    --badge-upcoming-bg: rgba(10, 132, 255, 0.2);
+    --badge-upcoming-color: #0a84ff;
+    --badge-past-bg: rgba(152, 152, 157, 0.2);
+    --badge-past-color: #98989d;
   }
 }
 
@@ -275,6 +383,14 @@ onBeforeUnmount(() => {
     --diagram-bg: #fafafa;
     --error-color: #ff3b30;
     --error-bg: rgba(255, 59, 48, 0.1);
+    /* Reminder card variables */
+    --reminder-bg: #ffffff;
+    --reminder-border: #e5e5ea;
+    --reminder-header-bg: #f5f5f7;
+    --badge-upcoming-bg: rgba(0, 122, 255, 0.1);
+    --badge-upcoming-color: #007aff;
+    --badge-past-bg: rgba(134, 134, 139, 0.1);
+    --badge-past-color: #86868b;
   }
 }
 </style>

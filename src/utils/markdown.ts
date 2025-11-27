@@ -46,7 +46,101 @@ export function resetTableCounter(): void {
   tableIndex = 0;
 }
 
+// Reminder data interface for type safety
+interface ReminderData {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  frequency: string;
+  time: string;
+}
+
+// Category icons mapping
+const categoryIcons: Record<string, { icon: string; name: string; color: string }> = {
+  work: { icon: '💼', name: 'Work', color: '#ff9800' },
+  personal: { icon: '👤', name: 'Personal', color: '#4caf50' },
+  shopping: { icon: '🛒', name: 'Shopping', color: '#e91e63' },
+  health: { icon: '🏥', name: 'Health', color: '#00bcd4' },
+  other: { icon: '📌', name: 'Other', color: '#9c27b0' },
+};
+
+// Frequency labels mapping  
+const frequencyLabels: Record<string, { icon: string; label: string }> = {
+  once: { icon: '🔵', label: 'Once' },
+  daily: { icon: '📅', label: 'Daily' },
+  weekly: { icon: '📆', label: 'Weekly' },
+  monthly: { icon: '🗓️', label: 'Monthly' },
+  yearly: { icon: '📊', label: 'Yearly' },
+};
+
+// Extract reminder data from blockquote content
+function extractReminderData(html: string): ReminderData | null {
+  // Look for the reminder-data comment pattern in the raw HTML
+  const commentMatch = html.match(/<!--\s*reminder-data:([\s\S]*?)-->/);
+  if (!commentMatch) return null;
+  
+  try {
+    return JSON.parse(commentMatch[1].trim()) as ReminderData;
+  } catch {
+    return null;
+  }
+}
+
+// Render a reminder as a styled visual component
+function renderReminderCard(data: ReminderData): string {
+  const category = categoryIcons[data.category] || categoryIcons.other;
+  const frequency = frequencyLabels[data.frequency] || frequencyLabels.once;
+  const time = new Date(data.time).toLocaleString();
+  const isPast = new Date(data.time) < new Date();
+  
+  return `<div class="reminder-card" data-reminder-id="${data.id}">
+    <div class="reminder-card-header">
+      <span class="reminder-icon">🔔</span>
+      <span class="reminder-title">${escapeHtml(data.title)}</span>
+      ${isPast ? '<span class="reminder-badge past">Past</span>' : '<span class="reminder-badge upcoming">Upcoming</span>'}
+    </div>
+    <div class="reminder-card-body">
+      <div class="reminder-meta-item">
+        <span class="reminder-meta-icon">${category.icon}</span>
+        <span class="reminder-meta-label">Category:</span>
+        <span class="reminder-meta-value" style="color: ${category.color}">${category.name}</span>
+      </div>
+      <div class="reminder-meta-item">
+        <span class="reminder-meta-icon">${frequency.icon}</span>
+        <span class="reminder-meta-label">Frequency:</span>
+        <span class="reminder-meta-value">${frequency.label}</span>
+      </div>
+      <div class="reminder-meta-item">
+        <span class="reminder-meta-icon">⏰</span>
+        <span class="reminder-meta-label">Time:</span>
+        <span class="reminder-meta-value ${isPast ? 'past' : ''}">${time}</span>
+      </div>
+      ${data.description && data.description !== 'Created from Wiki' ? `
+      <div class="reminder-description">
+        <span class="reminder-meta-icon">📝</span>
+        <span>${escapeHtml(data.description)}</span>
+      </div>
+      ` : ''}
+    </div>
+  </div>`;
+}
+
 const renderer: RendererObject = {
+  // Custom blockquote renderer to detect and render reminders
+  blockquote({ raw }) {
+    // First render the raw content to check for reminder data
+    const renderedContent = marked.parse(raw.replace(/^>/gm, '').trim()) as string;
+    
+    // Check if this blockquote contains reminder data
+    const reminderData = extractReminderData(raw);
+    if (reminderData) {
+      return renderReminderCard(reminderData);
+    }
+    
+    // Otherwise, render as a normal blockquote
+    return `<blockquote>${renderedContent}</blockquote>`;
+  },
   table({ header, rows }) {
     const currentIndex = tableIndex++;
     const headerHtml = `<thead><tr>${header.map(cell => `<th>${cell.text}</th>`).join('')}</tr></thead>`;
