@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
+import { formatReminderMarker, type ReminderData } from '../utils/reminderConstants';
 
 const emit = defineEmits<{
   close: [];
@@ -57,7 +58,17 @@ async function handleInsert() {
     const frequency = frequencies.find(f => f.value === reminderFrequency.value);
     
     // Generate markdown with reminder link
+    // Using inline code with base64-encoded JSON data to preserve metadata through Milkdown parsing
     const time = new Date(reminderTime.value).toLocaleString();
+    const reminderData: ReminderData = {
+      id: reminderId,
+      title: reminderTitle.value,
+      description: reminderDescription.value.trim() || 'Created from Wiki',
+      category: reminderCategory.value,
+      frequency: reminderFrequency.value,
+      time: reminderTime.value
+    };
+    const reminderMarker = formatReminderMarker(reminderData);
     const markdown = `
 > **🔔 Reminder: ${reminderTitle.value}**
 > 
@@ -65,14 +76,7 @@ async function handleInsert() {
 > ${frequency?.icon} Frequency: ${frequency?.label}  
 > ⏰ Time: ${time}
 > 
-> <!-- reminder-data:${JSON.stringify({
-  id: reminderId,
-  title: reminderTitle.value,
-  description: reminderDescription.value.trim() || 'Created from Wiki',
-  category: reminderCategory.value,
-  frequency: reminderFrequency.value,
-  time: reminderTime.value
-})} -->
+> \`${reminderMarker}\`
 `.trim();
 
     emit('insert', markdown, reminderId);
