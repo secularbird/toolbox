@@ -11,6 +11,21 @@ export function generateDiagramId(type: string): string {
   return `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+// Generate mermaid.ink URL for a Mermaid diagram
+export function getMermaidInkUrl(mermaidCode: string, theme: 'default' | 'dark' = 'default'): string {
+  // Use the JSON encoding format that mermaid.ink expects
+  const json = JSON.stringify({
+    code: mermaidCode,
+    mermaid: {
+      theme: theme
+    }
+  });
+  // Use TextEncoder for proper UTF-8 encoding, then convert to base64
+  const bytes = new TextEncoder().encode(json);
+  const encoded = btoa(String.fromCharCode(...bytes));
+  return `https://mermaid.ink/svg/${encoded}`;
+}
+
 // Efficient HTML escaping function using string replacement
 function escapeHtml(text: string): string {
   const escapeMap: Record<string, string> = {
@@ -60,10 +75,21 @@ const renderer: RendererObject = {
       }
     }
 
-    // Handle Mermaid diagrams
+    // Handle Mermaid diagrams - render using mermaid.ink remote server
     if (normalizedLang === 'mermaid' || normalizedLang === 'mermiad') {
-      const escapedText = escapeHtml(text);
-      return `<div class="mermaid">${escapedText}</div>`;
+      try {
+        const url = getMermaidInkUrl(text);
+        const id = generateDiagramId('mermaid');
+        // Use first meaningful line as alt text
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        const altText = lines[0] || 'Mermaid Diagram';
+        return `<div class="diagram-container mermaid-container" id="${id}">
+          <img src="${url}" alt="${escapeHtml(altText)}" class="diagram-image" />
+        </div>`;
+      } catch (err) {
+        console.error('Mermaid encoding error:', err);
+        return `<pre class="diagram-error">Error rendering Mermaid diagram</pre>`;
+      }
     }
 
     // Handle regular code blocks with syntax highlighting

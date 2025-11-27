@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick, shallowRef } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats, extractMarkdownTables } from '../utils/markdown';
+import { wrapSelection, insertAtCursor, markdownFormats, extractMarkdownTables, getMermaidInkUrl, generateDiagramId } from '../utils/markdown';
 import { EditorHistory } from '../utils/editorHistory';
+import plantumlEncoder from 'plantuml-encoder';
 // Milkdown imports
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from '@milkdown/core';
 import { commonmark } from '@milkdown/preset-commonmark';
@@ -217,6 +218,8 @@ async function initMilkdown(container: HTMLDivElement, content: string) {
           if (!isUpdatingMilkdown) {
             localValue.value = markdown;
           }
+          // Render diagrams after content changes
+          nextTick(() => renderDiagramsInWysiwyg());
         });
         // Setup listener for selection changes to update table toolbar
         ctx.get(listenerCtx).updated(() => {
@@ -231,6 +234,11 @@ async function initMilkdown(container: HTMLDivElement, content: string) {
     
     milkdownEditor.value = editor;
     isMilkdownReady.value = true;
+    
+    // Render diagrams after initial load
+    await nextTick();
+    renderDiagramsInWysiwyg();
+    
     return editor;
   } catch (error) {
     console.error('Failed to initialize Milkdown:', error);
@@ -249,6 +257,74 @@ async function destroyMilkdown() {
     milkdownEditor.value = null;
     isMilkdownReady.value = false;
   }
+}
+
+// Render diagram code blocks in WYSIWYG mode
+// Uses data-diagram-processed attribute to skip already processed blocks
+function renderDiagramsInWysiwyg() {
+  if (!milkdownContainerRef.value || editorMode.value !== 'wysiwyg') return;
+  
+  // Only find unprocessed code blocks by using a more specific selector
+  // This is more efficient than checking all code blocks
+  const unprocessedPreBlocks = milkdownContainerRef.value.querySelectorAll(
+    'pre:not([data-diagram-processed="true"]) code'
+  );
+  
+  if (unprocessedPreBlocks.length === 0) return;
+  
+  unprocessedPreBlocks.forEach((codeBlock) => {
+    const preElement = codeBlock.parentElement;
+    if (!preElement) return;
+    
+    // Check language class for mermaid or plantuml
+    const classList = codeBlock.className.split(' ');
+    const langClass = classList.find(c => c.startsWith('language-'));
+    if (!langClass) return;
+    
+    const lang = langClass.replace('language-', '').toLowerCase();
+    
+    // Only process diagram languages
+    if (lang !== 'mermaid' && lang !== 'mermiad' && lang !== 'plantuml') {
+      // Mark non-diagram code blocks as processed to skip in future iterations
+      preElement.setAttribute('data-diagram-processed', 'skipped');
+      return;
+    }
+    
+    const code = codeBlock.textContent || '';
+    
+    if (lang === 'mermaid' || lang === 'mermiad') {
+      try {
+        const url = getMermaidInkUrl(code);
+        const id = generateDiagramId('mermaid');
+        const container = document.createElement('div');
+        container.className = 'diagram-preview mermaid-preview';
+        container.id = id;
+        container.innerHTML = `<img src="${url}" alt="Mermaid Diagram" class="diagram-image" />`;
+        
+        // Insert after the code block
+        preElement.setAttribute('data-diagram-processed', 'true');
+        preElement.insertAdjacentElement('afterend', container);
+      } catch (err) {
+        console.error('Mermaid rendering error:', err);
+      }
+    } else if (lang === 'plantuml') {
+      try {
+        const encoded = plantumlEncoder.encode(code);
+        const url = `https://www.plantuml.com/plantuml/svg/${encoded}`;
+        const id = generateDiagramId('plantuml');
+        const container = document.createElement('div');
+        container.className = 'diagram-preview plantuml-preview';
+        container.id = id;
+        container.innerHTML = `<img src="${url}" alt="PlantUML Diagram" class="diagram-image" />`;
+        
+        // Insert after the code block
+        preElement.setAttribute('data-diagram-processed', 'true');
+        preElement.insertAdjacentElement('afterend', container);
+      } catch (err) {
+        console.error('PlantUML rendering error:', err);
+      }
+    }
+  });
 }
 
 watch(() => props.modelValue, async (newVal) => {
@@ -1308,6 +1384,27 @@ defineExpose({ applyFormat, insertText, editorMode });
   margin: 24px 0;
   background-color: var(--border-color);
   border: 0;
+}
+
+/* Diagram preview styles for WYSIWYG mode */
+.milkdown-editor :deep(.diagram-preview) {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--diagram-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;
+}
+
+.milkdown-editor :deep(.diagram-preview .diagram-image) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
 }
 
 /* Diagram menu styles */
