@@ -145,6 +145,12 @@ function getPreviewImageUrl(): string | null {
   return previewImage.value;
 }
 
+// Handle sync settings update
+function handleUpdateSyncSettings(newSettings: typeof syncSettings.value) {
+  // Update each property individually to maintain reactivity
+  syncSettings.value = { ...syncSettings.value, ...newSettings };
+}
+
 // Initialize
 onMounted(async () => {
   await initializeReminders();
@@ -211,7 +217,7 @@ onMounted(async () => {
       :sync-status="syncStatus"
       :is-syncing="isSyncing"
       @close="showSyncSettings = false"
-      @update:sync-settings="(v) => Object.assign(syncSettings, v)"
+      @update:sync-settings="handleUpdateSyncSettings"
       @save="saveSyncSettings"
       @test-connection="testGitHubConnection"
       @sync-to-github="syncToGitHub"
