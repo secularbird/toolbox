@@ -7,6 +7,9 @@ import { ref } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import type { SyncSettings } from '../types/reminder';
 
+// Default sync settings used until backend settings are loaded.
+// The id field is used by the backend database; actual values
+// are loaded via loadSyncSettings().
 const syncSettings = ref<SyncSettings>({
   id: 1,
   sync_enabled: false,

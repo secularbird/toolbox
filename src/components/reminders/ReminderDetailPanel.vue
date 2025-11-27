@@ -49,8 +49,10 @@ function handleSave() {
 
 function handleDelete() {
   if (editingReminder.value.id) {
+    // Emit delete event - parent component is responsible for
+    // handling the async delete operation and closing the panel
+    // on success. The parent should call @close after successful deletion.
     emit('delete', editingReminder.value.id);
-    emit('close');
   }
 }
 

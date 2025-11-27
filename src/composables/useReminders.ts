@@ -12,6 +12,9 @@ import { SMART_LISTS, DEFAULT_CATEGORIES } from '../constants/reminder';
 const reminders = ref<Reminder[]>([]);
 const selectedCategory = ref("today");
 const message = ref("");
+// Note: Categories are initialized with defaults. User-added categories
+// are stored in local state only. Backend persistence for custom categories
+// is a future enhancement.
 const categories = ref<Category[]>([...DEFAULT_CATEGORIES]);
 const isInitialized = ref(false);
 
@@ -131,10 +134,14 @@ export function useReminders() {
   }
 
   // Toggle flagged status
+  // Note: This currently only updates local state. Backend persistence
+  // for flagged status is TODO - see original component's comment.
   function toggleFlag(id: number) {
     const reminder = reminders.value.find(r => r.id === id);
     if (reminder) {
       reminder.flagged = !reminder.flagged;
+      // TODO: Call backend to update flagged status when API is available
+      // await invoke("update_reminder_flag", { id, flagged: reminder.flagged });
     }
   }
 
