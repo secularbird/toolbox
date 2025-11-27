@@ -1,6 +1,7 @@
 import { marked, type RendererObject } from 'marked';
 import hljs from 'highlight.js';
 import plantumlEncoder from 'plantuml-encoder';
+import { categoryIcons, frequencyLabels, type ReminderData } from './reminderConstants';
 
 // Generate a unique ID for each diagram using crypto.randomUUID with fallback
 export function generateDiagramId(type: string): string {
@@ -27,7 +28,7 @@ export function getMermaidInkUrl(mermaidCode: string, theme: 'default' | 'dark' 
 }
 
 // Efficient HTML escaping function using string replacement
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   const escapeMap: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
@@ -45,34 +46,6 @@ let tableIndex = 0;
 export function resetTableCounter(): void {
   tableIndex = 0;
 }
-
-// Reminder data interface for type safety
-interface ReminderData {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  frequency: string;
-  time: string;
-}
-
-// Category icons mapping
-const categoryIcons: Record<string, { icon: string; name: string; color: string }> = {
-  work: { icon: '💼', name: 'Work', color: '#ff9800' },
-  personal: { icon: '👤', name: 'Personal', color: '#4caf50' },
-  shopping: { icon: '🛒', name: 'Shopping', color: '#e91e63' },
-  health: { icon: '🏥', name: 'Health', color: '#00bcd4' },
-  other: { icon: '📌', name: 'Other', color: '#9c27b0' },
-};
-
-// Frequency labels mapping  
-const frequencyLabels: Record<string, { icon: string; label: string }> = {
-  once: { icon: '🔵', label: 'Once' },
-  daily: { icon: '📅', label: 'Daily' },
-  weekly: { icon: '📆', label: 'Weekly' },
-  monthly: { icon: '🗓️', label: 'Monthly' },
-  yearly: { icon: '📊', label: 'Yearly' },
-};
 
 // Extract reminder data from blockquote content
 function extractReminderData(html: string): ReminderData | null {

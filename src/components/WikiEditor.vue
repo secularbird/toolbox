@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, nextTick, shallowRef } from 'vue';
-import { wrapSelection, insertAtCursor, markdownFormats, extractMarkdownTables, getMermaidInkUrl, generateDiagramId } from '../utils/markdown';
+import { wrapSelection, insertAtCursor, markdownFormats, extractMarkdownTables, getMermaidInkUrl, generateDiagramId, escapeHtml } from '../utils/markdown';
+import { categoryIcons, frequencyLabels } from '../utils/reminderConstants';
 import { EditorHistory } from '../utils/editorHistory';
 import plantumlEncoder from 'plantuml-encoder';
 // Milkdown imports
@@ -331,24 +332,6 @@ function renderDiagramsInWysiwyg() {
   });
 }
 
-// Category icons mapping for reminder cards
-const categoryIcons: Record<string, { icon: string; name: string; color: string }> = {
-  work: { icon: '💼', name: 'Work', color: '#ff9800' },
-  personal: { icon: '👤', name: 'Personal', color: '#4caf50' },
-  shopping: { icon: '🛒', name: 'Shopping', color: '#e91e63' },
-  health: { icon: '🏥', name: 'Health', color: '#00bcd4' },
-  other: { icon: '📌', name: 'Other', color: '#9c27b0' },
-};
-
-// Frequency labels mapping for reminder cards
-const frequencyLabels: Record<string, { icon: string; label: string }> = {
-  once: { icon: '🔵', label: 'Once' },
-  daily: { icon: '📅', label: 'Daily' },
-  weekly: { icon: '📆', label: 'Weekly' },
-  monthly: { icon: '🗓️', label: 'Monthly' },
-  yearly: { icon: '📊', label: 'Yearly' },
-};
-
 // Style reminder blockquotes in WYSIWYG mode
 // Converts blockquotes with reminder data into styled reminder cards
 function styleRemindersInWysiwyg() {
@@ -392,7 +375,7 @@ function styleRemindersInWysiwyg() {
       cardDiv.innerHTML = `
         <div class="reminder-card-header">
           <span class="reminder-icon">🔔</span>
-          <span class="reminder-title">${escapeHtmlText(data.title)}</span>
+          <span class="reminder-title">${escapeHtml(data.title)}</span>
           ${isPast ? '<span class="reminder-badge past">Past</span>' : '<span class="reminder-badge upcoming">Upcoming</span>'}
         </div>
         <div class="reminder-card-body">
@@ -414,7 +397,7 @@ function styleRemindersInWysiwyg() {
           ${data.description && data.description !== 'Created from Wiki' ? `
           <div class="reminder-description">
             <span class="reminder-meta-icon">📝</span>
-            <span>${escapeHtmlText(data.description)}</span>
+            <span>${escapeHtml(data.description)}</span>
           </div>
           ` : ''}
         </div>
@@ -428,13 +411,6 @@ function styleRemindersInWysiwyg() {
       blockquote.setAttribute('data-reminder-processed', 'false');
     }
   });
-}
-
-// Simple HTML text escaper for dynamic content
-function escapeHtmlText(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 watch(() => props.modelValue, async (newVal) => {
