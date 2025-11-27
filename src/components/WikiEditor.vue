@@ -361,55 +361,59 @@ function styleRemindersInWysiwyg() {
       return;
     }
     
+    // Parse the JSON data and render the card
+    let data;
     try {
-      const data = JSON.parse(commentMatch[1].trim());
-      const category = categoryIcons[data.category] || categoryIcons.other;
-      const frequency = frequencyLabels[data.frequency] || frequencyLabels.once;
-      const time = new Date(data.time).toLocaleString();
-      const isPast = new Date(data.time) < new Date();
-      
-      // Create a styled reminder card
-      const cardDiv = document.createElement('div');
-      cardDiv.className = 'reminder-card-wysiwyg';
-      cardDiv.setAttribute('data-reminder-id', String(data.id));
-      cardDiv.innerHTML = `
-        <div class="reminder-card-header">
-          <span class="reminder-icon">🔔</span>
-          <span class="reminder-title">${escapeHtml(data.title)}</span>
-          ${isPast ? '<span class="reminder-badge past">Past</span>' : '<span class="reminder-badge upcoming">Upcoming</span>'}
-        </div>
-        <div class="reminder-card-body">
-          <div class="reminder-meta-item">
-            <span class="reminder-meta-icon">${category.icon}</span>
-            <span class="reminder-meta-label">Category:</span>
-            <span class="reminder-meta-value" style="color: ${category.color}">${category.name}</span>
-          </div>
-          <div class="reminder-meta-item">
-            <span class="reminder-meta-icon">${frequency.icon}</span>
-            <span class="reminder-meta-label">Frequency:</span>
-            <span class="reminder-meta-value">${frequency.label}</span>
-          </div>
-          <div class="reminder-meta-item">
-            <span class="reminder-meta-icon">⏰</span>
-            <span class="reminder-meta-label">Time:</span>
-            <span class="reminder-meta-value ${isPast ? 'past' : ''}">${time}</span>
-          </div>
-          ${data.description && data.description !== 'Created from Wiki' ? `
-          <div class="reminder-description">
-            <span class="reminder-meta-icon">📝</span>
-            <span>${escapeHtml(data.description)}</span>
-          </div>
-          ` : ''}
-        </div>
-      `;
-      
-      // Insert the card after the blockquote and hide the original
-      blockquote.setAttribute('data-reminder-processed', 'true');
-      blockquote.setAttribute('style', 'display: none;');
-      blockquote.insertAdjacentElement('afterend', cardDiv);
+      data = JSON.parse(commentMatch[1].trim());
     } catch {
       blockquote.setAttribute('data-reminder-processed', 'false');
+      return;
     }
+    
+    const category = categoryIcons[data.category] || categoryIcons.other;
+    const frequency = frequencyLabels[data.frequency] || frequencyLabels.once;
+    const time = new Date(data.time).toLocaleString();
+    const isPast = new Date(data.time) < new Date();
+    
+    // Create a styled reminder card
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'reminder-card-wysiwyg';
+    cardDiv.setAttribute('data-reminder-id', String(data.id));
+    cardDiv.innerHTML = `
+      <div class="reminder-card-header">
+        <span class="reminder-icon">🔔</span>
+        <span class="reminder-title">${escapeHtml(data.title)}</span>
+        ${isPast ? '<span class="reminder-badge past">Past</span>' : '<span class="reminder-badge upcoming">Upcoming</span>'}
+      </div>
+      <div class="reminder-card-body">
+        <div class="reminder-meta-item">
+          <span class="reminder-meta-icon">${category.icon}</span>
+          <span class="reminder-meta-label">Category:</span>
+          <span class="reminder-meta-value" style="color: ${category.color}">${category.name}</span>
+        </div>
+        <div class="reminder-meta-item">
+          <span class="reminder-meta-icon">${frequency.icon}</span>
+          <span class="reminder-meta-label">Frequency:</span>
+          <span class="reminder-meta-value">${frequency.label}</span>
+        </div>
+        <div class="reminder-meta-item">
+          <span class="reminder-meta-icon">⏰</span>
+          <span class="reminder-meta-label">Time:</span>
+          <span class="reminder-meta-value ${isPast ? 'past' : ''}">${time}</span>
+        </div>
+        ${data.description && data.description !== 'Created from Wiki' ? `
+        <div class="reminder-description">
+          <span class="reminder-meta-icon">📝</span>
+          <span>${escapeHtml(data.description)}</span>
+        </div>
+        ` : ''}
+      </div>
+    `;
+    
+    // Insert the card after the blockquote and hide the original using CSS class
+    blockquote.setAttribute('data-reminder-processed', 'true');
+    blockquote.classList.add('reminder-blockquote-hidden');
+    blockquote.insertAdjacentElement('afterend', cardDiv);
   });
 }
 
@@ -1569,6 +1573,11 @@ defineExpose({ applyFormat, insertText, editorMode });
 .milkdown-editor :deep(.reminder-card-wysiwyg:hover) {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Hide the original blockquote when reminder card is displayed */
+.milkdown-editor :deep(.reminder-blockquote-hidden) {
+  display: none !important;
 }
 
 .milkdown-editor :deep(.reminder-card-header) {

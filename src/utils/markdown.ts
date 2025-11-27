@@ -102,16 +102,15 @@ function renderReminderCard(data: ReminderData): string {
 const renderer: RendererObject = {
   // Custom blockquote renderer to detect and render reminders
   blockquote({ raw }) {
-    // First render the raw content to check for reminder data
-    const renderedContent = marked.parse(raw.replace(/^>/gm, '').trim()) as string;
-    
-    // Check if this blockquote contains reminder data
+    // Check if this blockquote contains reminder data first to avoid unnecessary parsing
     const reminderData = extractReminderData(raw);
     if (reminderData) {
       return renderReminderCard(reminderData);
     }
     
-    // Otherwise, render as a normal blockquote
+    // Otherwise, render as a normal blockquote by parsing the inner content
+    const innerContent = raw.replace(/^>/gm, '').trim();
+    const renderedContent = marked.parse(innerContent) as string;
     return `<blockquote>${renderedContent}</blockquote>`;
   },
   table({ header, rows }) {
